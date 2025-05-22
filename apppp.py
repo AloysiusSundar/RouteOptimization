@@ -8,7 +8,7 @@ import openrouteservice
 from openrouteservice import convert
 from openrouteservice import exceptions as ors_exceptions
 
-ORS_API_KEY = ""  # Replace this with your ORS API key
+ORS_API_KEY = st.secrets["api_keys"]["ors"]
 ors_client = openrouteservice.Client(key=ORS_API_KEY)
 
 def inject_custom_css():
