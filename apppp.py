@@ -96,10 +96,10 @@ def inject_custom_css():
     """, unsafe_allow_html=True)
 
 
-st.set_page_config(page_title="Multi-Day Tour Planner with Reservations", layout="centered")
+st.set_page_config(page_title="TripIt", layout="centered")
 inject_custom_css()
 
-st.title("🗓️ Multi-Day Tour Planner with Reservations and Active Hours")
+st.title("🗓️ TripIt")
 
 st.markdown("### Travel Preferences")
 travel_mode = st.selectbox("Select your travel mode", ["driving-car", "cycling-regular", "foot-walking"])
