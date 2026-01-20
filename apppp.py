@@ -8,8 +8,10 @@ import openrouteservice
 from openrouteservice import convert
 from openrouteservice import exceptions as ors_exceptions
 
-ORS_API_KEY = ""  # Replace this with your ORS API key
+ORS_API_KEY = st.secrets["api_keys"]["ors"]
 ors_client = openrouteservice.Client(key=ORS_API_KEY)
+
+
 
 def inject_custom_css():
     st.markdown("""
@@ -99,22 +101,38 @@ def inject_custom_css():
 st.set_page_config(page_title="Multi-Day Tour Planner with Reservations", layout="centered")
 inject_custom_css()
 
-st.title("🗓️ Multi-Day Tour Planner with Reservations and Active Hours")
+
+
+st.title("🗓️ TripIt")
 
 st.markdown("### Travel Preferences")
 travel_mode = st.selectbox("Select your travel mode", ["driving-car", "cycling-regular", "foot-walking"])
 
 # --- Geocode function ---
-geolocator = Nominatim(user_agent="tour_planner_app")
+import requests
 
-def geocode_location(place):
+@st.cache_data(show_spinner=False)
+def geocode_location(place, focus=None):
     try:
-        location = geolocator.geocode(place)
-        if location:
-            return (location.latitude, location.longitude)
-    except:
+        url = "https://api.openrouteservice.org/geocode/search"
+        params = {
+            "api_key": ORS_API_KEY,
+            "text": place,
+            "size": 1
+        }
+
+        if focus:
+            params["focus_point.lon"] = focus[1]
+            params["focus_point.lat"] = focus[0]
+
+        response = requests.get(url, params=params).json()
+        coords = response["features"][0]["geometry"]["coordinates"]
+        return (coords[1], coords[0])
+    except Exception as e:
+        st.warning(f"Geocoding failed for '{place}': {e}")
         return None
-    return None
+
+
 
 # --- Held-Karp TSP solver ---
 def get_ors_durations(coords, mode="driving-car"):
@@ -284,7 +302,6 @@ def generate_schedule(places, coords, order, start_date, trip_length, active_hou
 # ==== Streamlit UI ====
 
 
-
 # 1. Trip info
 start_date = st.date_input("Trip Start Date", datetime.now().date())
 trip_length = st.number_input("Trip Length (days)", min_value=1, max_value=30, value=3)
@@ -383,13 +400,22 @@ if len(places_data) < 2:
 # Geocode places and filter out failures
 coords = []
 valid_places = []
-for place in places_data:
-    coord = geocode_location(place["name"])
+
+focus_point = None
+
+for i, place in enumerate(places_data):
+    if i == 0:
+        coord = geocode_location(place["name"])
+        focus_point = coord       # Save first coordinate
+    else:
+        coord = geocode_location(place["name"], focus=focus_point)
+
     if coord:
         coords.append(coord)
         valid_places.append(place)
     else:
         st.error(f"Could not geocode place: {place['name']}")
+
 
 if len(coords) < 2:
     st.error("Need at least two geocoded places to optimize route.")
