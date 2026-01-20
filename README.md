@@ -56,6 +56,6 @@ Have a feature request or found a bug? [Open an issue](https://github.com/YOUR_U
 
 ## ⭐ Star This Project
 
-If you found this useful or cool, please consider giving it a ⭐ on GitHub — it helps others discover the project!
+If you found this useful or cool, please consider giving it a ⭐ on GitHub. It helps others discover the project!
 
 <p align="center"><i>Smart routes. Better trips.</i></p>
