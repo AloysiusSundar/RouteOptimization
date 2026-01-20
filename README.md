@@ -4,10 +4,6 @@
 <p align="center">
   <a href="https://routeoptimization-g5dtxtcww9vgnmnrudnf78.streamlit.app/" target="_blank">
     <img src="https://img.shields.io/badge/Launch-App-green?style=for-the-badge&logo=streamlit" alt="Launch App">
-  </a>
-  <a href="[https://github.com/YOUR_USERNAME/YOUR_REPO_NAME](https://github.com/AloysiusSundar/RouteOptimization)" target="_blank">
-    <img src="https://img.shields.io/github/stars/YOUR_USERNAME/YOUR_REPO_NAME?style=for-the-badge" alt="GitHub stars">
-  </a>
 </p>
 
 ---
