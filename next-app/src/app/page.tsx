@@ -5,9 +5,10 @@ import dynamic from 'next/dynamic';
 import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } from '@/lib/ScheduleGenerator';
 import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
-import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle } from 'lucide-react';
+import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Download, Car, Footprints, Bike } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
 import { clusterPlaces } from '@/lib/Clusterer';
+import { downloadCSV } from '@/lib/Exporter';
 
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
 
@@ -50,6 +51,7 @@ export default function Home() {
   const [recommendations, setRecommendations] = useState<POI[]>([]);
   const [isRecommending, setIsRecommending] = useState(false);
   const [interest, setInterest] = useState('Top tourist attractions, museums, and historical landmarks');
+  const [transportProfile, setTransportProfile] = useState('driving-car');
 
   // Base City Geocoding (Debounced)
   useEffect(() => {
@@ -122,6 +124,14 @@ export default function Home() {
     setActiveSearchIdx(null);
     setSuggestions([]);
   };
+
+  // Auto-replan when transport mode changes (Premium UX) (V6.0)
+  useEffect(() => {
+    if (schedule && schedule.length > 0) {
+      handlePlanTour();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transportProfile]);
 
   useEffect(() => {
     const newActiveHours: Record<string, ActiveHours> = { ...activeHours };
@@ -292,7 +302,7 @@ export default function Home() {
             dayPlaces = [{ name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, forcedDate: forcedDateStr }, ...dayPlaces];
         }
 
-        const dayDurations = await getDurationsMatrix(dayCoords);
+        const dayDurations = await getDurationsMatrix(dayCoords, transportProfile);
         const { order: dayOrder } = optimizeRoute(
           dayCoords,
           dayDurations,
@@ -331,7 +341,7 @@ export default function Home() {
 
       // Step 3: Generate Schedule
       // Since we already ordered them by day and then by proximity, durations need updating
-      const finalDurations = await getDurationsMatrix(finalOrderedCoords);
+      const finalDurations = await getDurationsMatrix(finalOrderedCoords, transportProfile);
       
       const sched = generateSchedule(
         finalOrderedPlaces,
@@ -345,7 +355,7 @@ export default function Home() {
       console.log('📅 Generated Schedule:', sched);
 
       console.log(`🗺️ Fetching full optimized route polyline for ${finalOrderedCoords.length} stops...`);
-      const fullGeoJson = await getRoutePolyline(finalOrderedCoords);
+      const fullGeoJson = await getRoutePolyline(finalOrderedCoords, transportProfile);
       
       // NEW: Generate focused polylines for each day (V4.8)
       const allRouteGeoJsons: Record<string, any> = { 'all': fullGeoJson };
@@ -356,7 +366,7 @@ export default function Home() {
          const dayCount = dayStopCounts[dayIdx];
          if (dayCount > 1) {
             const dayCoords = finalOrderedCoords.slice(sliceStart, sliceStart + dayCount);
-            allRouteGeoJsons[dayIdx.toString()] = await getRoutePolyline(dayCoords);
+            allRouteGeoJsons[dayIdx.toString()] = await getRoutePolyline(dayCoords, transportProfile);
          }
          sliceStart += dayCount;
       }
@@ -596,6 +606,31 @@ export default function Home() {
                 <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Days</label>
                 <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none" type="number" min={1} max={30} value={tripLength} onChange={e => setTripLength(parseInt(e.target.value) || 1)} />
               </div>
+
+              {/* Transport Mode Toggle (V6.0) */}
+              <div className="col-span-2 mt-2">
+                <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-secondary)]/70 uppercase ml-1 block mb-2">Transport Mode</label>
+                <div className="flex bg-white/5 p-1 rounded-[1.25rem] border border-white/10 gap-1">
+                  {[
+                    { id: 'driving-car', icon: Car, label: 'Driving' },
+                    { id: 'foot-walking', icon: Footprints, label: 'Walking' },
+                    { id: 'cycling-regular', icon: Bike, label: 'Biking' }
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      onClick={() => setTransportProfile(mode.id)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        transportProfile === mode.id 
+                          ? 'bg-[var(--color-secondary)] text-white shadow-[0_0_15px_rgba(83,225,111,0.4)]' 
+                          : 'text-white/40 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <mode.icon size={14} />
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -802,33 +837,58 @@ export default function Home() {
         {schedule && schedule.length > 0 && (
           <div className="absolute right-10 top-24 bottom-10 w-96 flex flex-col gap-4 z-20">
             <div className="bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-3xl p-6 border border-[var(--color-outline-variant)]/10 flex-1 overflow-y-auto shadow-2xl scrollbar-thin scrollbar-thumb-white/10">
-              <h2 className="text-xl font-bold text-[var(--color-on-surface)] mb-6 flex items-center gap-2">
-                 <MapPin className="text-[var(--color-secondary)]" size={20} />
-                 Optimized Plan
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-[var(--color-on-surface)] flex items-center gap-2">
+                   <MapPin className="text-[var(--color-secondary)]" size={20} />
+                   Optimized Plan
+                </h2>
+                <button 
+                  onClick={() => schedule && downloadCSV(schedule)}
+                  className="p-2 mr-[-8px] rounded-full hover:bg-white/5 text-[var(--color-secondary)] hover:text-white transition-all group relative"
+                  title="Download CSV"
+                >
+                  <Download size={18} />
+                  <span className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-black/80 text-[9px] text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Export to CSV</span>
+                </button>
+              </div>
               <div className="space-y-6 border-l border-[var(--color-primary)]/30 ml-2 pl-6 relative">
-                {schedule
-                  .filter(stop => {
-                    if (selectedDay === 'all') return true;
-                    const d = new Date(startDate + "T00:00:00");
-                    d.setDate(d.getDate() + selectedDay);
-                    return stop.date === d.toLocaleDateString('en-CA');
-                  })
-                  .map((stop, i) => (
-                    <div key={i} className="relative group hover:-translate-y-1 transition-transform">
-                      <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-[var(--color-primary)] border-2 border-[var(--color-background)] shadow-[0_0_8px_var(--color-primary)] group-hover:bg-[var(--color-secondary)] transition-colors" />
-                      <div className="bg-[var(--color-surface-container-low)] p-4 rounded-xl border border-[var(--color-outline-variant)]/10 group-hover:border-[var(--color-primary)]/40 transition-colors">
-                        <h4 className="text-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-primary-fixed-dim)] transition-colors">{stop.place}</h4>
-                        <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-on-surface-variant)] mt-1 mb-2">{stop.day.substring(0,3)}, {stop.date}</p>
-                        <div className="inline-flex items-center gap-2 bg-[var(--color-surface-container-lowest)] px-2 py-1 rounded-md border border-[var(--color-outline-variant)]/20">
-                          <svg className="text-[var(--color-secondary)]" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                          <span className="font-mono text-[var(--color-primary)] text-xs font-semibold">
-                            {stop.time} - {stop.departure.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                          </span>
+                {(() => {
+                  let realStopCounter = 0;
+                  return schedule
+                    .filter(stop => {
+                      if (selectedDay === 'all') return true;
+                      const d = new Date(startDate + "T00:00:00");
+                      d.setDate(d.getDate() + selectedDay);
+                      return stop.date === d.toLocaleDateString('en-CA');
+                    })
+                    .map((stop, i) => {
+                      const isHotel = stop.place.toLowerCase().includes('stay location');
+                      if (!isHotel) realStopCounter++;
+                      
+                      return (
+                        <div key={i} className="relative group hover:-translate-y-1 transition-transform">
+                          <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-[var(--color-primary)] border-2 border-[var(--color-background)] shadow-[0_0_8px_var(--color-primary)] group-hover:bg-[var(--color-secondary)] transition-colors" />
+                          <div className="bg-[var(--color-surface-container-low)] p-4 rounded-xl border border-[var(--color-outline-variant)]/10 group-hover:border-[var(--color-primary)]/40 transition-colors">
+                            <div className="flex justify-between items-start mb-1">
+                                <h4 className="text-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-primary-fixed-dim)] transition-colors">
+                                    {isHotel ? '🏠' : `${realStopCounter}.`} {stop.place}
+                                </h4>
+                                <span className="text-[10px] font-mono font-black text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-0.5 rounded-full uppercase tracking-tighter shrink-0">
+                                    {isHotel ? 'BASE' : `STOP ${realStopCounter}`}
+                                </span>
+                            </div>
+                            <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-on-surface-variant)] mt-1 mb-2">{stop.day.substring(0,3)}, {stop.date}</p>
+                            <div className="inline-flex items-center gap-2 bg-[var(--color-surface-container-lowest)] px-2 py-1 rounded-md border border-[var(--color-outline-variant)]/20">
+                              <Clock className="text-[var(--color-secondary)]" size={12} />
+                              <span className="font-mono text-[var(--color-primary)] text-xs font-semibold">
+                                {stop.time} - {stop.departure.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    });
+                })()}
               </div>
             </div>
           </div>

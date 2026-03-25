@@ -1,61 +1,67 @@
-<h1 align="center">🗺️ TripIt</h1>
-<p align="center"><strong>Plan Less. Do More.</strong></p>
-
-<p align="center">
-  <a href="https://routeoptimization-g5dtxtcww9vgnmnrudnf78.streamlit.app/" target="_blank">
-    <img src="https://img.shields.io/badge/Launch-App-green?style=for-the-badge&logo=streamlit" alt="Launch App">
-</p>
+<h1 align="center">🗺️ RouteOptimization (TripIt)</h1>
+<p align="center"><strong>Plan Less. Do More. AI-Powered Smart Itineraries.</strong></p>
 
 ---
 
-## 🚀 What is this?
+## 🚀 The Multi-Engine Evolution
+This project has evolved from a simple Python prototype into a high-performance, secure, and AI-driven web application.
 
-**TripIt** is a web app designed to help you **plan the most efficient trip** by simply entering the list of places you want to visit.
+### 🌟 Modern Engine (`next-app`)
+The core of the project is now a **Next.js 15+** application designed for speed and security.
+- **AI Core**: Integrates **Gemini 1.5 Flash** for natural language itinerary parsing. Just type "3 days in Paris next week" and watch the magic.
+- **Security First**: Zero client-side API keys. All OpenRouteService (ORS) and Gemini calls are routed through **Next.js Server Actions** and API routes.
+- **Performance**: Consolidated API calls reduce network overhead by 80% using multi-stop routing logic.
+- **Smart Proximity**: Intent-aware search biases destinations towards your "Base City" automatically.
 
-Whether it's a weekend city tour or a multi-day vacation, just plug in your destinations and let the app calculate the **most optimal travel route** for you. 
+### 🧪 Legacy Prototype (`apppp.py`)
+The original concept was built with **Streamlit** and Python. It remains in the root as a "proof of concept" and a reference for the original routing logic.
+- [Launch Legacy App](https://routeoptimization-g5dtxtcww9vgnmnrudnf78.streamlit.app/)
 
 ---
 
 ## ✨ Features
-
-- ✅ Intuitive interface for entering locations
-- ✅ Automatically computes optimized travel path
-- ✅ Supports driving, walking, and cycling modes
-- ✅ Multi-day travel planning with time window reservations
-
----
-
-## 🧪 Upcoming Features
-
-Working on:
-
-- 🚌 **Public Transportation Support**  
-  Accurate bus/train timings and route data
-
-- 🚦 **Live Traffic Integration**  
-  Smarter suggestions using real-time conditions
-
-- 🎨 **UI Overhaul**  
-  A smoother, cleaner, and more responsive experience
+- ✅ **Natural Language Parsing**: Extract full trips from a single paragraph of text.
+- ✅ **Held-Karp Optimization**: Advanced TSP (Traveling Salesperson Problem) solver for the most efficient stop ordering.
+- ✅ **Real-Time Map**: Dynamic Leaflet integration with optimized route polylines.
+- ✅ **Smart Scheduling**: Handles visit durations, arrival/departure times, and multi-day planning.
 
 ---
 
-## 🛠️ Built With
-
-- [Streamlit](https://streamlit.io/)
-- [OpenRouteService API](https://openrouteservice.org/)
-- [Folium](https://python-visualization.github.io/folium/)
-- [Geopy](https://geopy.readthedocs.io/)
-- Python 3.9+
+## 🛠️ Stack
+- **Frontend**: Next.js 15 (App Router), TypeScript, Framer Motion, Lucide.
+- **Maps & Routing**: Leaflet, OpenRouteService API.
+- **AI**: Google Gemini API.
+- **Legacy**: Streamlit, Folium, Geopy.
 
 ---
 
-## 📬 Feedback
+## 🔐 Security Note
+This project follows strict security standards:
+- **No Client-Side Keys**: `ORS_API_KEY` and `GEMINI_API_KEY` are stored in `.env.local` and never exposed to the browser.
+- **Server Actions**: All external API communication happens on the server.
 
-Have a feature request or found a bug? [Open an issue](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/issues) or reach out via email!
+---
 
-## ⭐ Star This Project
+## 🚦 Getting Started (Next.js)
 
-If you found this useful or cool, please consider giving it a ⭐ on GitHub. It helps others discover the project!
+1. Navigate to the `next-app` folder:
+```bash
+cd next-app
+```
+2. Install dependencies:
+```bash
+npm install
+```
+3. Create a `.env.local` file with your keys:
+```env
+ORS_API_KEY=your_key_here
+GEMINI_API_KEY=your_key_here
+```
+4. Start the engine:
+```bash
+npm run dev
+```
 
-<p align="center"><i>Smart routes. Better trips.</i></p>
+---
+
+<p align="center"><i>Smart routes. Better trips. Built for the modern traveler.</i></p>

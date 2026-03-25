@@ -71,16 +71,14 @@ export default function MapComponent({ coords, routeGeoJson, schedule }: MapProp
           box-shadow: 0 0 15px var(--color-primary);
         }
         .hotel-icon {
-          background: #facc15; /* yellow-400 */
-          color: #1e1b4b; /* indigo-950 */
-          border: 2px solid white;
-          border-radius: 8px;
+          background: transparent;
+          border: none;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 900;
-          font-size: 14px;
-          box-shadow: 0 0 20px #facc15;
+          font-size: 24px;
+          filter: drop-shadow(0 0 2px rgba(250, 204, 21, 0.4));
         }
         .leaflet-tooltip-tripit {
           background: var(--color-surface-container-high) !important;
@@ -106,38 +104,48 @@ export default function MapComponent({ coords, routeGeoJson, schedule }: MapProp
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
-        {coords.map((coord, i) => {
-          const stop = schedule?.[i];
-          const icon = L.divIcon({
-            className: 'number-icon',
-            html: `<span>${i + 1}</span>`,
-            iconSize: [28, 28],
-            iconAnchor: [14, 14]
-          });
+        {(() => {
+          let realStopIndex = 0;
+          return coords.map((coord, i) => {
+            const stop = schedule?.[i];
+            const isHotel = stop?.place.toLowerCase().includes('stay location');
+            if (!isHotel) realStopIndex++;
+            
+            const displayLabel = isHotel ? '🏨' : realStopIndex.toString();
+            
+            const icon = L.divIcon({
+              className: isHotel ? 'hotel-icon' : 'number-icon',
+              html: `<span>${displayLabel}</span>`,
+              iconSize: isHotel ? [32, 32] : [28, 28],
+              iconAnchor: isHotel ? [16, 16] : [14, 14]
+            });
 
-          return (
-            <Marker key={i} position={coord} icon={icon}>
-              <Popup>
-                <div className="text-gray-900 font-semibold p-1">
-                  {i + 1}. {stop?.place || 'Stop'}
-                </div>
-              </Popup>
-              {stop && (
-                <Tooltip direction="top" offset={[0, -10]} opacity={1} className="leaflet-tooltip-tripit">
-                  <div className="flex flex-col gap-1 min-w-[140px]">
-                    <div className="text-[10px] uppercase tracking-widest text-[var(--color-secondary)] font-bold">Stop {i+1}</div>
-                    <div className="text-sm font-bold text-white">{stop.place}</div>
-                    <div className="h-px bg-white/10 my-1"></div>
-                    <div className="flex items-center gap-2 text-[10px] text-gray-300">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      {stop.time} - {stop.departure.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                    </div>
+            return (
+              <Marker key={i} position={coord} icon={icon}>
+                <Popup>
+                  <div className="text-gray-900 font-semibold p-1">
+                    {isHotel ? '🏠' : `${realStopIndex}.`} {stop?.place || 'Stop'}
                   </div>
-                </Tooltip>
-              )}
-            </Marker>
-          );
-        })}
+                </Popup>
+                {stop && (
+                  <Tooltip direction="top" offset={[0, -10]} opacity={1} className="leaflet-tooltip-tripit">
+                    <div className="flex flex-col gap-1 min-w-[140px]">
+                      <div className="text-[10px] uppercase tracking-widest text-[var(--color-secondary)] font-bold">
+                        {isHotel ? 'Base' : `Stop ${realStopIndex}`}
+                      </div>
+                      <div className="text-sm font-bold text-white">{stop.place}</div>
+                      <div className="h-px bg-white/10 my-1"></div>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {stop.time} - {stop.departure.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                      </div>
+                    </div>
+                  </Tooltip>
+                )}
+              </Marker>
+            );
+          });
+        })()}
         {routePositions.length > 0 && (
            <Polyline positions={routePositions} pathOptions={{ color: '#4b8eff', weight: 4, opacity: 0.6 }} />
         )}

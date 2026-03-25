@@ -30,3 +30,5 @@ desktop.ini
 *.db
 *.sqlite
 *.sqlite3
+
+ResumeAddThisFolderToGitIgnore/

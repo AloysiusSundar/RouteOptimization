@@ -20,12 +20,14 @@ export async function POST(req: Request) {
       Rules:
       1. IDENTIFY THE BASE CITY/REGION (e.g., New York, Tokyo, London).
       2. IDENTIFY THE STAY LOCATION / HOTEL (e.g. "Hilton", "staying at my friend's place in Shinjuku").
-      3. APPEND THE BASE CITY NAME TO EVERY PLACE NAME and the STAY LOCATION (e.g. "Met Museum" -> "Met Museum, NYC"). This is CRITICAL for geocoding accuracy.
-      4. If the user mentions "tomorrow", "next week", etc., calculate based on ${today}.
-      5. Durations should be in minutes (default 60 if not specified).
-      6. isReservation should be true ONLY if they clearly mention a booking, reservation, or fixed time.
-      7. If reservationTime is mentioned, format as HH:MM.
-      8. Output Schema:
+      3. CRITICAL: Set "stayLocation" ONLY if the user explicitly mentions "staying at", "hotel", "accommodation", "Airbnb", or "friend's house". If NO accommodation is mentioned, the "stayLocation" field MUST be an empty string (""). DO NOT default it to the base city.
+      4. TRIP LENGTH: Extract the number of "days" (integer) from phrases like "3 day trip", "for 4 days", "next 3 days". If "weekend" is mentioned, set "days" to 2. Default to 1 if not specified.
+      5. APPEND THE BASE CITY NAME TO EVERY PLACE NAME and the STAY LOCATION (e.g. "Met Museum" -> "Met Museum, NYC"). This is CRITICAL for geocoding accuracy.
+      6. If the user mentions "tomorrow", "next week", etc., calculate based on ${today}.
+      7. Durations should be in minutes (default 60 if not specified).
+      8. isReservation should be true ONLY if they clearly mention a booking, reservation, or fixed time.
+      9. If reservationTime is mentioned, format as HH:MM.
+      10. Output Schema:
       {
         "startDate": "YYYY-MM-DD",
         "days": number,

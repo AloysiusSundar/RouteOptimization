@@ -74,13 +74,13 @@ export function clusterPlaces(
       const centroid = calculateCentroid(day.places, baseCoords);
       const dist = calculateDistance(p.coords!, centroid);
       
-      // Load Balancing Adjustment: 
-      // Bias slightly away from already full days to keep schedule balanced
-      const balancePenalty = day.places.length * 0.1; 
-      const adjustedDist = dist + balancePenalty;
+      // Load-Balanced Score (V5.1): Proximity + Population Weight
+      // (dist + epsilon) ensures that if distances are equal (e.g. all empty), 
+      // the day with fewer places wins.
+      const score = (dist + 0.0001) * (1 + day.places.length * 2.0);
 
-      if (adjustedDist < minDistance) {
-        minDistance = adjustedDist;
+      if (score < minDistance) {
+        minDistance = score;
         bestDay = dayIdx;
       }
     });
