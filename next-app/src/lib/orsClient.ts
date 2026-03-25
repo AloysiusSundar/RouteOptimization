@@ -28,6 +28,10 @@ export async function getCoordinates(placeName: string, focus?: [number, number]
 export async function getDurationsMatrix(coords: [number, number][], profile: string = 'driving-car'): Promise<number[][]> {
   const apiKey = getApiKey();
   
+  if (coords.length <= 1) {
+    return [[0]];
+  }
+
   // ORS matrix endpoint expects [lon, lat]
   const locations = coords.map(([lat, lon]) => [lon, lat]);
   

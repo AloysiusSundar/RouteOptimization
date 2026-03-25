@@ -2,6 +2,7 @@ export interface Place {
   name: string;
   reservation_time?: Date | null;
   visit_duration: number; // in minutes
+  forcedDate?: string; // YYYY-MM-DD
 }
 
 export interface ScheduleStop {
@@ -51,6 +52,19 @@ export function generateSchedule(
     const idx = order[i];
     const place = places[idx];
     const coord = coords[idx];
+
+    // Forced Date Alignment (V4.7 Fix)
+    // If this stop belongs to a specific day, ensure we don't start it on an earlier day
+    if (place.forcedDate) {
+      const targetDate = new Date(place.forcedDate + "T00:00:00");
+      const currentOnlyDate = new Date(currentTime);
+      currentOnlyDate.setHours(0,0,0,0);
+
+      if (currentOnlyDate < targetDate) {
+        const nextDayH = getActiveHoursForDate(targetDate);
+        currentTime = setTimeOnDate(targetDate, nextDayH.start.hours, nextDayH.start.minutes);
+      }
+    }
 
     let arrivalTime = new Date(currentTime);
 
@@ -115,7 +129,7 @@ export function generateSchedule(
       arrival: new Date(arrivalTime),
       departure: new Date(visitEnd),
       day: arrivalTime.toLocaleDateString('en-US', { weekday: 'long' }),
-      date: arrivalTime.toISOString().split('T')[0],
+      date: arrivalTime.toLocaleDateString('en-CA'),
       time: arrivalTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
     });
   }

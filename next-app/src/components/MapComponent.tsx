@@ -70,6 +70,18 @@ export default function MapComponent({ coords, routeGeoJson, schedule }: MapProp
           font-size: 12px;
           box-shadow: 0 0 15px var(--color-primary);
         }
+        .hotel-icon {
+          background: #facc15; /* yellow-400 */
+          color: #1e1b4b; /* indigo-950 */
+          border: 2px solid white;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 900;
+          font-size: 14px;
+          box-shadow: 0 0 20px #facc15;
+        }
         .leaflet-tooltip-tripit {
           background: var(--color-surface-container-high) !important;
           border: 1px solid var(--color-outline-variant) !important;

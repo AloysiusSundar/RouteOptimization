@@ -1,7 +1,11 @@
+'use server';
+
 /**
- * RecommendationEngine.ts
- * Logic for fetching nearby POIs via Overpass and ranking them semantically
- * using Edge ML (transformers.js).
+ * RecommendationEngine.ts (V3.1 - Intent Driven + AI Ranking)
+ * - Intent → OSM tag mapping (CLEAN + POWERFUL)
+ * - Dynamic Overpass queries
+ * - Hugging Face Semantic Ranking (Resume-Ready ML)
+ * - Heuristic fallback (Upgraded scoring)
  */
 
 export interface POI {
@@ -14,141 +18,234 @@ export interface POI {
 }
 
 /**
- * Fetches Points of Interest from OpenStreetMap via Overpass API
+ * 🔥 Intent → OSM Tag Mapping
  */
-export async function fetchNearbyPOIs(lat: number, lon: number, radius: number = 3000): Promise<POI[]> {
-  const query = `
-    [out:json][timeout:60];
-    (
-      node["tourism"~"museum|attraction|viewpoint|gallery|theme_park"](around:${radius}, ${lat}, ${lon});
-      way["tourism"~"museum|attraction|viewpoint|gallery|theme_park"](around:${radius}, ${lat}, ${lon});
-      node["historic"~"monument|landmark|memorial"](around:${radius}, ${lat}, ${lon});
-      node["artwork"~"sculpture|installation"](around:${radius}, ${lat}, ${lon});
-    );
-    out center;
-  `;
+const intentToTags: Record<string, { key: string; value: string }[]> = {
+  beach: [
+    { key: "natural", value: "beach" },
+    { key: "leisure", value: "beach_resort" }
+  ],
+  park: [
+    { key: "leisure", value: "park|garden" }
+  ],
+  museum: [
+    { key: "tourism", value: "museum|gallery" }
+  ],
+  temple: [
+    { key: "amenity", value: "place_of_worship" },
+    { key: "building", value: "cathedral|church|chapel|temple|shrine|mosque" }
+  ],
+  attraction: [
+    { key: "tourism", value: "attraction|viewpoint|theme_park" }
+  ],
+  historic: [
+    { key: "historic", value: "monument|memorial|landmark|heritage|castle|palace|ruins" },
+    { key: "building", value: "civic|castle|palace" }
+  ]
+};
 
-  const response = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: query
-  });
-
-  if (!response.ok) throw new Error('Overpass API failed');
-  const data = await response.json();
-
-  console.log('[Phase 3] Overpass raw data:', data);
-  if (!data.elements || !Array.isArray(data.elements)) {
-    console.warn('[Phase 3] Overpass returned no valid elements.');
-    return [];
-  }
-
-  const mapped = data.elements
-    .filter((el: any) => el && typeof el === 'object') // Extra defensive
-    .map((el: any) => {
-      try {
-        return {
-          id: el.id,
-          name: el.tags?.name || el.tags?.operator || 'Unknown Attraction',
-          lat: el.lat || el.center?.lat,
-          lon: el.lon || el.center?.lon,
-          tags: el.tags || {}
-        };
-      } catch (err) {
-        console.error('[Phase 3] Error mapping element:', el, err);
-        return null;
-      }
-    })
-    .filter((poi: any): poi is POI => 
-      !!poi && poi.name !== 'Unknown Attraction' && !!poi.lat && !!poi.lon
-    );
-
-  console.log('[Phase 3] Mapped POIs count:', mapped.length);
-  return mapped;
-}
-
-let extractorPromise: any = null;
-
-async function getExtractor() {
-  if (!extractorPromise) {
-    try {
-      // 1. More robust shim: catch ALL global contexts
-      const globalContext: any = typeof window !== 'undefined' ? window : globalThis;
-      if (!globalContext.process) {
-        console.log('[Phase 3] Mocking process object for browser compatibility');
-        globalContext.process = { env: {} };
-      }
-      if (!globalContext.process.env) {
-        globalContext.process.env = {};
-      }
-      
-      // Some versions look specifically at globalThis.process
-      if (!(globalThis as any).process) {
-        (globalThis as any).process = globalContext.process;
-      }
-
-      console.log('[Phase 3] Initiating dynamic import of @xenova/transformers');
-      const Transformers = await import('@xenova/transformers');
-      const { pipeline, env } = Transformers;
-      
-      console.log('[Phase 3] Configuring transformers.js environment...');
-      // 2. Proactive environment configuration
-      env.allowLocalModels = false;
-      env.useBrowserCache = true;
-      
-      // Some versions need this manually set if not detected correctly
-      if (typeof window !== 'undefined') {
-        (env as any).allowRemoteModels = true;
-      }
-      
-      console.log('[Phase 3] Loading Xenova/all-MiniLM-L6-v2 model...');
-      extractorPromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
-        progress_callback: (p: any) => {
-          if (p.status === 'progress') {
-            console.log(`[Phase 3] AI Model Download: ${Math.round(p.progress)}%`);
-          }
-        }
-      });
-      console.log('[Phase 3] Pipeline initialized.');
-    } catch (err) {
-      console.error('[Phase 3] Failed to load transformers pipeline:', err);
-      extractorPromise = null;
-      throw err;
-    }
-  }
-  return extractorPromise;
+/**
+ * 🧠 Basic Intent Detection
+ */
+function detectIntent(query: string): string {
+  const q = query.toLowerCase();
+  if (q.includes("beach")) return "beach";
+  if (q.includes("park") || q.includes("garden")) return "park";
+  if (q.includes("museum") || q.includes("gallery")) return "museum";
+  if (q.includes("temple") || q.includes("church") || q.includes("cathedral") || q.includes("shrine") || q.includes("mosque")) return "temple";
+  if (q.includes("historic") || q.includes("monument") || q.includes("gothic") || q.includes("castle") || q.includes("palace") || q.includes("architecture")) return "historic";
+  return "attraction";
 }
 
 /**
- * Ranks POIs based on semantic similarity to user interest using transformers.js
+ * 🔥 Dynamic Overpass Query Builder
+ */
+function buildOverpassQuery(lat: number, lon: number, radius: number, intent: string): string {
+  const tagRules = intentToTags[intent] || intentToTags["attraction"];
+  const queries = tagRules.map(rule => `
+    node["${rule.key}"~"${rule.value}"](around:${radius}, ${lat}, ${lon});
+    way["${rule.key}"~"${rule.value}"](around:${radius}, ${lat}, ${lon});
+  `).join("\n");
+
+  const timeoutVal = radius >= 100000 ? 180 : 90;
+  const limitStr = radius >= 30000 ? "out center 500;" : "out center;";
+
+  return `
+    [out:json][timeout:${timeoutVal}];
+    (
+      ${queries}
+    );
+    ${limitStr}
+  `;
+}
+
+/**
+ * 🌍 Fetch POIs (INTENT AWARE)
+ */
+export async function fetchNearbyPOIs(
+  lat: number,
+  lon: number,
+  interest: string,
+  radius: number = 3000,
+  retryCount: number = 0
+): Promise<POI[]> {
+  const intent = detectIntent(interest);
+  console.log(`[Engine V3.1] Intent detected: ${intent} (Radius: ${radius}m)`);
+
+  const query = buildOverpassQuery(lat, lon, radius, intent);
+
+  try {
+    const response = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: query,
+      signal: AbortSignal.timeout(185000)
+    });
+
+    if (!response.ok) {
+      console.warn(`[Engine V3.1] Overpass Error ${response.status}, retrying...`);
+      const nextRad = [30000, 100000, 1000000][retryCount] || 1000000;
+      if (retryCount < 3) return fetchNearbyPOIs(lat, lon, interest, nextRad, retryCount + 1);
+      return [];
+    }
+
+    const data = await response.json();
+    const mapped: POI[] = (data.elements || [])
+      .map((el: any) => ({
+        id: el.id,
+        name: el.tags?.name || el.tags?.operator || el.tags?.tourism || "Unknown",
+        lat: el.lat || el.center?.lat,
+        lon: el.lon || el.center?.lon,
+        tags: el.tags || {}
+      }))
+      .filter((poi: POI) => poi.name !== "Unknown" && poi.lat && poi.lon);
+
+    console.log(`[Engine V3.1] Candidates found: ${mapped.length}`);
+
+    if (mapped.length === 0 && retryCount < 3) {
+      const nextRad = [30000, 100000, 1000000][retryCount];
+      return fetchNearbyPOIs(lat, lon, interest, nextRad, retryCount + 1);
+    }
+
+    return mapped;
+  } catch (err) {
+    console.error('[Engine V3.1] Fetch Critical Fail:', err);
+    if (retryCount < 3) {
+      const nextRad = [30000, 100000, 1000000][retryCount];
+      return fetchNearbyPOIs(lat, lon, interest, nextRad, retryCount + 1);
+    }
+    return [];
+  }
+}
+
+/**
+ * 🤖 Semantic Ranking (Cohere AI) + Heuristic Fallback
  */
 export async function rankPOIs(pois: POI[], interest: string): Promise<POI[]> {
-  if (pois.length === 0) return [];
+  console.log(`[Engine V4.0] Ranking ${pois.length} places with Cohere AI for "${interest}"`);
+  
+  const cohereKey = process.env.COHERE_API_KEY;
+  if (!cohereKey) {
+    console.warn('[Engine V4.0] COHERE_API_KEY missing. Using HeuristicFallback.');
+    return rankPOIsHeuristic(pois, interest);
+  }
 
-  console.log('[Phase 3] Ranking POIs for interest:', interest);
-  const extractor = await getExtractor();
-  if (!extractor) throw new Error('Semantic Engine not ready.');
+  try {
+    const query = interest || 'Top attractions';
+    const documents = pois.map(poi => 
+      `${poi.name}. ${poi.tags?.tourism || ''} ${poi.tags?.historic || ''} ${poi.tags?.description || ''}`.trim()
+    );
 
-  const interestOutput = await extractor(interest || 'Recommended places', { pooling: 'mean', normalize: true });
-  const interestVector = interestOutput.data;
+    const modelId = "embed-english-v3.0";
+    
+    // Header for all Cohere requests
+    const headers = {
+      "Authorization": `Bearer ${cohereKey}`,
+      "Content-Type": "application/json",
+      "Request-Source": "node-sdk"
+    };
 
-  const ranked = await Promise.all(pois.map(async (poi) => {
-    try {
-      const context = `${poi.name || ''}. ${poi.tags?.tourism || ''} ${poi.tags?.historic || ''} ${poi.tags?.description || ''}`.trim() || 'POI';
-      const poiOutput = await extractor(context, { pooling: 'mean', normalize: true });
-      const poiVector = poiOutput.data;
+    // Step 1: Get Query Embedding
+    const queryRes = await fetch("https://api.cohere.ai/v1/embed", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        texts: [query],
+        model: modelId,
+        input_type: "search_query",
+        embedding_types: ["float"]
+      })
+    });
 
+    // Step 2: Get Document Embeddings (in one batch)
+    const docRes = await fetch("https://api.cohere.ai/v1/embed", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        texts: documents,
+        model: modelId,
+        input_type: "search_document",
+        embedding_types: ["float"]
+      })
+    });
+
+    if (!queryRes.ok || !docRes.ok) {
+        console.warn(`[Engine V4.0] Cohere API Fail. Using HeuristicFallback.`);
+        return rankPOIsHeuristic(pois, interest);
+    }
+
+    const { embeddings: queryEmbeds } = await queryRes.json();
+    const { embeddings: docEmbeds } = await docRes.json();
+    
+    const interestVector = queryEmbeds.float[0];
+    const poiVectors = docEmbeds.float;
+
+    console.log(`[Engine V4.0] Semantic search complete. Computing similarities...`);
+
+    const ranked = pois.map((poi, idx) => {
+      const poiVector = poiVectors[idx];
       let score = 0;
-      for (let i = 0; i < interestVector.length; i++) {
+      if (poiVector && interestVector) {
+        // Dot product (since Cohere vectors are normalized by default)
+        for (let i = 0; i < interestVector.length; i++) {
           score += interestVector[i] * poiVector[i];
+        }
       }
       return { ...poi, score };
-    } catch (err) {
-      console.error('[Phase 3] Error ranking POI:', poi.name, err);
-      return { ...poi, score: 0 };
-    }
-  }));
+    });
 
-  const finalResults = ranked.sort((a, b) => (b.score || 0) - (a.score || 0));
-  console.log('[Phase 3] Ranking complete. Top result:', finalResults[0]?.name);
-  return finalResults;
+    const final = ranked.sort((a, b) => (b.score || 0) - (a.score || 0));
+    console.log(`[Engine V4.0] Cohere Top Result: ${final[0]?.name} (${final[0]?.score?.toFixed(4)})`);
+    return final;
+  } catch (err) {
+    console.error('[Engine V4.0] Cohere Process Error:', err);
+    return rankPOIsHeuristic(pois, interest);
+  }
+}
+
+/**
+ * 🧠 Upgraded Heuristic Ranking
+ */
+async function rankPOIsHeuristic(pois: POI[], interest: string): Promise<POI[]> {
+  const query = interest.toLowerCase();
+  const ranked = pois.map(poi => {
+    const name = (poi.name || "").toLowerCase();
+    const tags = JSON.stringify(poi.tags || {}).toLowerCase();
+    let score = 0;
+
+    if (name.includes(query)) score += 8;
+    if (tags.includes(query)) score += 5;
+
+    const terms = query.split(/\s+/).filter(t => t.length > 2);
+    terms.forEach(term => {
+      if (name.includes(term)) score += 3;
+      if (tags.includes(term)) score += 2;
+    });
+
+    if (poi.tags.tourism) score += 1;
+    return { ...poi, score };
+  });
+
+  const final = ranked.sort((a, b) => (b.score || 0) - (a.score || 0));
+  console.log(`[Engine V3.1] Heuristic Top Result: ${final[0]?.name}`);
+  return final;
 }

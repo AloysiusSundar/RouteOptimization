@@ -7,6 +7,7 @@ import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
 import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
+import { clusterPlaces } from '@/lib/Clusterer';
 
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
 
@@ -32,12 +33,15 @@ export default function Home() {
   const [tripLength, setTripLength] = useState<number>(3);
   const [baseCity, setBaseCity] = useState<string>('');
   const [baseCityCoords, setBaseCityCoords] = useState<[number, number] | null>(null);
+  const [accommodation, setAccommodation] = useState<string>('');
+  const [accommodationCoords, setAccommodationCoords] = useState<[number, number] | null>(null);
   const [activeHours, setActiveHours] = useState<Record<string, ActiveHours>>({});
   
+  const [selectedDay, setSelectedDay] = useState<number | 'all'>('all');
   const [isPlanning, setIsPlanning] = useState(false);
   const [schedule, setSchedule] = useState<ScheduleStop[] | null>(null);
   const [mapCoords, setMapCoords] = useState<[number, number][]>([]);
-  const [routeGeoJson, setRouteGeoJson] = useState<any>(null);
+  const [routeGeoJson, setRouteGeoJson] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [aiInput, setAiInput] = useState('');
@@ -63,6 +67,24 @@ export default function Home() {
     }, 1000);
     return () => clearTimeout(timer);
   }, [baseCity]);
+
+  // Accommodation Geocoding (Debounced)
+  useEffect(() => {
+    if (!accommodation || accommodation.length < 3) {
+      setAccommodationCoords(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const focus = baseCityCoords || undefined;
+        const coords = await getCoordinates(accommodation, focus);
+        if (coords) setAccommodationCoords(coords);
+      } catch (err) {
+        console.warn('Silent fail geocoding accommodation:', err);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [accommodation, baseCityCoords]);
 
   // Autocomplete debouncing
   useEffect(() => {
@@ -153,7 +175,7 @@ export default function Home() {
       const cityCoords = await getCoordinates(baseCity);
       if (!cityCoords) throw new Error('Could not locate base city for recommendations.');
       
-      const rawPois = await fetchNearbyPOIs(cityCoords[0], cityCoords[1]);
+      const rawPois = await fetchNearbyPOIs(cityCoords[0], cityCoords[1], interest);
       const ranked = await rankPOIs(rawPois, interest);
       setRecommendations(ranked.slice(0, 5));
     } catch (err: any) {
@@ -212,42 +234,135 @@ export default function Home() {
           }
         }
       } 
-      const durations = await getDurationsMatrix(coords);
-      console.log('⏱️ Durations Matrix (mins):', durations);
-
       const parsedPlaces = validPlaces.map(p => {
          let reservation_time: Date | null = null;
-         if (p.is_reservation) {
+         if (p.is_reservation && p.reservation_date && p.reservation_clock) {
             reservation_time = new Date(`${p.reservation_date}T${p.reservation_clock}:00`);
          }
          return { ...p, reservation_time };
       });
-      
-      const { optimizedCoords, order } = optimizeRoute(coords, durations, parsedPlaces);
-      console.log('🚗 Optimized Order Indices:', order);
-      console.log('🎯 Organized Coords:', optimizedCoords);
 
-      const sched = generateSchedule(
-        parsedPlaces,
-        coords,
-        order,
-        new Date(startDate + "T00:00:00"),
-        activeHours,
-        durations
+      // NEW: Cluster destinations into Days (V4.1 Feature)
+      console.log(`🎯 Clustering destinations into ${tripLength} logical days...`);
+      const clusteredDays = clusterPlaces(
+        validPlaces.map((p, i: number) => ({ ...p, coords: coords[i], reservation_date: p.reservation_date || '' })),
+        startDate,
+        tripLength,
+        accommodationCoords || baseCityCoords // Stay location is priority anchor
       );
-      console.log('📅 Generated Schedule:', sched);
 
-      console.log(`🗺️ Fetching full optimized route polyline for ${optimizedCoords.length} stops...`);
-      const fullGeoJson = await getRoutePolyline(optimizedCoords);
-      
-      if (fullGeoJson && fullGeoJson.features) {
-        console.log(`✅ Full route polyline fetched successfully`);
-      } else {
-        console.warn(`❌ Failed to fetch full route polyline`);
+      // Step 2: Solve TSP *Per Day* and Assemble Sequence
+      const finalOrderedCoords: [number, number][] = [];
+      const finalOrderedPlaces: any[] = [];
+      const finalOrderIndices: number[] = [];
+      const dayStopCounts: number[] = [];
+      const hasStayAnchor = !!accommodationCoords;
+
+      for (let dayIdx = 0; dayIdx < clusteredDays.length; dayIdx++) {
+        const day = clusteredDays[dayIdx];
+        if (day.indices.length === 0) {
+          dayStopCounts.push(0);
+          continue;
+        }
+
+        const anchorCoords = accommodationCoords;
+        const hasAnchor = hasStayAnchor;
+
+        if (day.indices.length === 1 && !hasAnchor) {
+          const globalIdx = day.indices[0];
+          finalOrderIndices.push(globalIdx);
+          finalOrderedCoords.push(coords[globalIdx]);
+          finalOrderedPlaces.push(parsedPlaces[globalIdx]);
+          continue;
+        }
+
+        console.log(`🚗 Solving Day ${dayIdx + 1} locally for ${day.places.length} stops...`);
+        
+        const targetDate = new Date(startDate + "T00:00:00");
+        targetDate.setDate(targetDate.getDate() + dayIdx);
+        const forcedDateStr = targetDate.toLocaleDateString('en-CA'); // YYYY-MM-DD local
+
+        let dayCoords: [number, number][] = day.indices.map(i => coords[i]);
+        let dayPlaces: any[] = day.indices.map(i => parsedPlaces[i]);
+
+        const dayCountForPoly = day.indices.length + (hasAnchor ? 2 : 0);
+
+        if (hasAnchor) {
+            dayCoords = [anchorCoords as [number, number], ...dayCoords];
+            dayPlaces = [{ name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, forcedDate: forcedDateStr }, ...dayPlaces];
+        }
+
+        const dayDurations = await getDurationsMatrix(dayCoords);
+        const { order: dayOrder } = optimizeRoute(
+          dayCoords,
+          dayDurations,
+          dayPlaces,
+          hasAnchor // fixedStart
+        );
+
+        // Map local order back to global indices and assembly
+        dayOrder.forEach(localIdx => {
+          if (hasAnchor && localIdx === 0) {
+              // Add Hotel Start
+              finalOrderedCoords.push(anchorCoords as [number, number]);
+              finalOrderedPlaces.push({ name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, is_stay_anchor: true, forcedDate: forcedDateStr });
+          } else {
+              const globalIdx = day.indices[hasAnchor ? localIdx - 1 : localIdx];
+              finalOrderIndices.push(globalIdx);
+              finalOrderedCoords.push(coords[globalIdx]);
+              // Inject forcedDate into regular spots too
+              finalOrderedPlaces.push({ ...parsedPlaces[globalIdx], forcedDate: forcedDateStr });
+          }
+        });
+
+        // Add Hotel End for Round Trip
+        if (hasAnchor) {
+            finalOrderedCoords.push(anchorCoords as [number, number]);
+            finalOrderedPlaces.push({ name: `Stay Location (End)`, visit_duration: 0, is_reservation: false, is_stay_anchor: true, forcedDate: forcedDateStr });
+        }
+        
+        // Track count for polyline slicing
+        dayStopCounts.push(dayCountForPoly);
       }
 
-      setMapCoords(optimizedCoords);
-      setRouteGeoJson(fullGeoJson);
+      console.log('🏁 Multi-Day Global Order:', finalOrderIndices);
+
+      console.log('🏁 Multi-Day Global Order:', finalOrderIndices);
+
+      // Step 3: Generate Schedule
+      // Since we already ordered them by day and then by proximity, durations need updating
+      const finalDurations = await getDurationsMatrix(finalOrderedCoords);
+      
+      const sched = generateSchedule(
+        finalOrderedPlaces,
+        finalOrderedCoords,
+        finalOrderedPlaces.map((_, idx: number) => idx), // It's already in order
+        new Date(startDate + "T00:00:00"),
+        activeHours,
+        finalDurations
+      );
+      
+      console.log('📅 Generated Schedule:', sched);
+
+      console.log(`🗺️ Fetching full optimized route polyline for ${finalOrderedCoords.length} stops...`);
+      const fullGeoJson = await getRoutePolyline(finalOrderedCoords);
+      
+      // NEW: Generate focused polylines for each day (V4.8)
+      const allRouteGeoJsons: Record<string, any> = { 'all': fullGeoJson };
+      
+      // Extract day segments from the final sequence
+      let sliceStart = 0;
+      for (let dayIdx = 0; dayIdx < clusteredDays.length; dayIdx++) {
+         const dayCount = dayStopCounts[dayIdx];
+         if (dayCount > 1) {
+            const dayCoords = finalOrderedCoords.slice(sliceStart, sliceStart + dayCount);
+            allRouteGeoJsons[dayIdx.toString()] = await getRoutePolyline(dayCoords);
+         }
+         sliceStart += dayCount;
+      }
+
+      setMapCoords(finalOrderedCoords);
+      setRouteGeoJson(allRouteGeoJsons);
       setSchedule(sched);
     } catch (err: any) {
       setError(err.message || 'An error occurred while planning the tour.');
@@ -273,6 +388,7 @@ export default function Home() {
       if (data.days) setTripLength(data.days);
       
       let focus: [number, number] | undefined = undefined;
+      
       if (data.baseCity) {
         setBaseCity(data.baseCity);
         const cityCoords = await getCoordinates(data.baseCity);
@@ -280,6 +396,10 @@ export default function Home() {
       } else if (baseCity) {
         const cityCoords = await getCoordinates(baseCity);
         if (cityCoords) focus = cityCoords;
+      }
+
+      if (data.stayLocation) {
+        setAccommodation(data.stayLocation);
       }
 
       if (data.places) {
@@ -346,21 +466,57 @@ export default function Home() {
           </div>
         </header>
 
+        {/* Day Navigation Bar (V4.4) */}
+        {schedule && schedule.length > 0 && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[45] flex items-center gap-2 p-1.5 bg-[var(--color-surface-container-low)]/80 backdrop-blur-2xl rounded-2xl border border-white/5 shadow-2xl animate-in fade-in slide-in-from-top-4">
+            <button 
+              onClick={() => setSelectedDay('all')}
+              className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === 'all' ? 'bg-[var(--color-primary)] text-white shadow-[0_0_15px_var(--color-primary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+            >
+              Overview
+            </button>
+            <div className="w-px h-4 bg-white/10 mx-1"></div>
+            {Array.from({ length: tripLength }).map((_, i) => (
+              <button 
+                key={i}
+                onClick={() => setSelectedDay(i)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === i ? 'bg-[var(--color-secondary)] text-white shadow-[0_0_15px_var(--color-secondary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+              >
+                Day {i + 1}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Map Background */}
         <div className="absolute inset-0 z-0">
-          {/* Use live derived coords for instant feedback, fallback to optimized ones if exists */}
           <MapComponent 
-            coords={mapCoords.length > 0 ? mapCoords : places.filter(p => p.coords).map(p => p.coords!)} 
-            routeGeoJson={routeGeoJson} 
-            schedule={schedule || places.filter(p => p.coords).map(p => ({
-              place: p.name,
-              latlon: p.coords!,
-              arrival: new Date(),
-              departure: new Date(),
-              day: '',
-              date: '',
-              time: 'Selected'
-            }))} 
+            coords={
+              selectedDay === 'all' 
+                ? (mapCoords.length > 0 ? mapCoords : places.filter(p => p.coords).map(p => p.coords!))
+                : (schedule?.filter(s => {
+                    const d = new Date(startDate + "T00:00:00");
+                    d.setDate(d.getDate() + selectedDay);
+                    return s.date === d.toLocaleDateString('en-CA');
+                  }).map(s => s.latlon) || [])
+            } 
+            routeGeoJson={routeGeoJson[selectedDay.toString()]} 
+            schedule={
+              (schedule || places.filter(p => p.coords).map(p => ({
+                place: p.name,
+                latlon: p.coords!,
+                arrival: new Date(),
+                departure: new Date(),
+                day: '',
+                date: '',
+                time: 'Selected'
+              }))).filter(s => {
+                if (selectedDay === 'all') return true;
+                const d = new Date(startDate + "T00:00:00");
+                d.setDate(d.getDate() + selectedDay);
+                return s.date === d.toLocaleDateString('en-CA');
+              })
+            } 
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)] via-transparent to-transparent pointer-events-none"></div>
         </div>
@@ -410,15 +566,27 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 space-y-1.5">
-                <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Trip Base City</label>
-                <input 
-                  className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10" 
-                  type="text" 
-                  placeholder="e.g. New York, Tokyo"
-                  value={baseCity} 
-                  onChange={e => setBaseCity(e.target.value)} 
-                />
+              <div className="col-span-2 grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Trip Base City</label>
+                  <input 
+                    className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10" 
+                    type="text" 
+                    placeholder="e.g. Tokyo"
+                    value={baseCity} 
+                    onChange={e => setBaseCity(e.target.value)} 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-secondary)]/70 uppercase ml-1">Stay Location 🏨</label>
+                  <input 
+                    className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-secondary)]/50 focus:ring-4 focus:ring-[var(--color-secondary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10" 
+                    type="text" 
+                    placeholder="e.g. Hilton Shinjuku"
+                    value={accommodation} 
+                    onChange={e => setAccommodation(e.target.value)} 
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Starting Date</label>
@@ -588,7 +756,7 @@ export default function Home() {
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="h-14 bg-white/5 rounded-2xl border border-white/5" />
                   ))}
-                  <p className="text-[9px] text-white/20 text-center animate-bounce uppercase tracking-widest font-bold mt-2">Semantic Search Active...</p>
+                  <p className="text-[9px] text-white/20 text-center animate-bounce uppercase tracking-widest font-bold mt-2">Searching...</p>
                 </div>
               )}
 
@@ -599,7 +767,7 @@ export default function Home() {
                       <div className="flex flex-col gap-0.5 max-w-[80%]">
                         <span className="text-sm font-bold text-white truncate">{poi.name}</span>
                         <span className="text-[9px] uppercase tracking-wider text-white/30 font-medium">
-                          {poi.tags.tourism || poi.tags.historic || 'Attraction'} • {Math.round((poi.score || 0) * 100)}% Match
+                          {poi.tags.tourism || poi.tags.historic || 'Attraction'}
                         </span>
                       </div>
                       <button 
@@ -639,21 +807,28 @@ export default function Home() {
                  Optimized Plan
               </h2>
               <div className="space-y-6 border-l border-[var(--color-primary)]/30 ml-2 pl-6 relative">
-                {schedule.map((stop, i) => (
-                  <div key={i} className="relative group hover:-translate-y-1 transition-transform">
-                    <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-[var(--color-primary)] border-2 border-[var(--color-background)] shadow-[0_0_8px_var(--color-primary)] group-hover:bg-[var(--color-secondary)] transition-colors" />
-                    <div className="bg-[var(--color-surface-container-low)] p-4 rounded-xl border border-[var(--color-outline-variant)]/10 group-hover:border-[var(--color-primary)]/40 transition-colors">
-                      <h4 className="text-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-primary-fixed-dim)] transition-colors">{stop.place}</h4>
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-on-surface-variant)] mt-1 mb-2">{stop.day.substring(0,3)}, {stop.date}</p>
-                      <div className="inline-flex items-center gap-2 bg-[var(--color-surface-container-lowest)] px-2 py-1 rounded-md border border-[var(--color-outline-variant)]/20">
-                        <svg className="text-[var(--color-secondary)]" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        <span className="font-mono text-[var(--color-primary)] text-xs font-semibold">
-                          {stop.time} - {stop.departure.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </span>
+                {schedule
+                  .filter(stop => {
+                    if (selectedDay === 'all') return true;
+                    const d = new Date(startDate + "T00:00:00");
+                    d.setDate(d.getDate() + selectedDay);
+                    return stop.date === d.toLocaleDateString('en-CA');
+                  })
+                  .map((stop, i) => (
+                    <div key={i} className="relative group hover:-translate-y-1 transition-transform">
+                      <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-[var(--color-primary)] border-2 border-[var(--color-background)] shadow-[0_0_8px_var(--color-primary)] group-hover:bg-[var(--color-secondary)] transition-colors" />
+                      <div className="bg-[var(--color-surface-container-low)] p-4 rounded-xl border border-[var(--color-outline-variant)]/10 group-hover:border-[var(--color-primary)]/40 transition-colors">
+                        <h4 className="text-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-primary-fixed-dim)] transition-colors">{stop.place}</h4>
+                        <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-on-surface-variant)] mt-1 mb-2">{stop.day.substring(0,3)}, {stop.date}</p>
+                        <div className="inline-flex items-center gap-2 bg-[var(--color-surface-container-lowest)] px-2 py-1 rounded-md border border-[var(--color-outline-variant)]/20">
+                          <svg className="text-[var(--color-secondary)]" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          <span className="font-mono text-[var(--color-primary)] text-xs font-semibold">
+                            {stop.time} - {stop.departure.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           </div>

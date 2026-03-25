@@ -1,7 +1,8 @@
 export function optimizeRoute(
   coords: [number, number][],
   durations: number[][],
-  places?: { reservation_time?: Date | null }[]
+  places?: { reservation_time?: Date | null }[],
+  fixedStart: boolean = false
 ): { optimizedCoords: [number, number][]; order: number[] } {
   const n = coords.length;
   if (n === 0) return { optimizedCoords: [], order: [] };
@@ -10,8 +11,13 @@ export function optimizeRoute(
   // dp map -> key: "[mask],[node]", value: [cost, prevNode]
   const dp: Record<string, [number, number]> = {};
 
-  for (let i = 0; i < n; i++) {
-    dp[`${1 << i},${i}`] = [0, -1];
+  if (fixedStart) {
+    // Force start at index 0
+    dp[`${1 << 0},0`] = [0, -1];
+  } else {
+    for (let i = 0; i < n; i++) {
+      dp[`${1 << i},${i}`] = [0, -1];
+    }
   }
 
   for (let size = 2; size <= n; size++) {

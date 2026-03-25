@@ -1,12 +1,13 @@
-**TripIt** is a web app designed to help you **plan the most efficient trip** by simply entering the list of places you want to visit.
+# 🚀 TripIt Modern Engine
 
-Whether it's a weekend city tour or a multi-day vacation, just plug in your destinations and let the app calculate the **most optimal travel route** for you. 
+This is the modern **Next.js** implementation of the Route Optimization project. 
 
----
+TripIt is a web app designed to help you plan the most efficient trip by simply entering the list of places you want to visit.
 
-## ✨ Features
+Whether it's a weekend city tour or a multi-day vacation, just plug in your destinations and let the app calculate the most optimal travel route for you.
 
-- ✅ Intuitive interface for entering locations
-- ✅ Automatically computes optimized travel path
-- ✅ Supports driving, walking, and cycling modes
-- ✅ Multi-day travel planning with time window reservations
+✨ Features
+✅ Intuitive interface for entering locations
+✅ Automatically computes optimized travel path
+✅ Supports driving, walking, and cycling modes
+✅ Multi-day travel planning with time window reservations
