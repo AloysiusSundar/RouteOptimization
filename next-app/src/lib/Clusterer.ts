@@ -9,6 +9,7 @@ export interface ClusterablePlace {
   name: string;
   coords?: [number, number];
   reservation_date: string; // YYYY-MM-DD
+  is_reservation: boolean; // V4.13 Filter for Hard vs Soft Constraint
 }
 
 export interface ClusteredDay {
@@ -37,12 +38,15 @@ export function clusterPlaces(
     indices: []
   }));
 
+  const activePlacesWithCoords = places.filter(p => p.coords);
+  const globalCentroid = calculateCentroid(activePlacesWithCoords, baseCoords || [0, 0]);
+
   const tripStart = new Date(startDate + "T00:00:00");
   const unassignedIndices: number[] = [];
 
   // 1. Hard Reservation Assignment
   places.forEach((p, idx) => {
-    if (p.reservation_date) {
+    if (p.reservation_date && p.is_reservation) { // V4.13: Only lock if explicitly marked as a reservation
       const resDate = new Date(p.reservation_date + "T00:00:00");
       const diffDays = Math.round((resDate.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
       
@@ -55,12 +59,21 @@ export function clusterPlaces(
     unassignedIndices.push(idx);
   });
 
-  // 2. Greedy Proximity Assignment for "Free" Spots
-  // We compute the centroid of each day (or use baseCoords if empty)
+  // 2. Initial Seeding for Empty Days (V4.12 Fix for Day Dumping)
+  // If a day has no reservations, give it one unassigned spot to anchor its centroid
+  // before the greedy proximity pass. This forces distribution across all days.
+  for (let d = 0; d < numDays; d++) {
+    if (clusters[d].places.length === 0 && unassignedIndices.length > 0) {
+      const seedIdx = unassignedIndices.shift()!;
+      clusters[d].places.push(places[seedIdx]);
+      clusters[d].indices.push(seedIdx);
+    }
+  }
+
+  // 3. Greedy Proximity Assignment for remaining "Free" Spots
   unassignedIndices.forEach((idx) => {
     const p = places[idx];
     if (!p.coords) {
-        // Fallback: assign to Day 1 if no coordinates (shouldn't happen with geocoding)
         clusters[0].places.push(p);
         clusters[0].indices.push(idx);
         return;
@@ -70,17 +83,18 @@ export function clusterPlaces(
     let bestDay = 0;
 
     clusters.forEach((day, dayIdx) => {
-      // Centroid of the day
-      const centroid = calculateCentroid(day.places, baseCoords);
+      // Centroid of the day (fallback to global center or hotel)
+      const centroid = calculateCentroid(day.places, baseCoords || globalCentroid);
       const dist = calculateDistance(p.coords!, centroid);
       
-      // Load-Balanced Score (V5.1): Proximity + Population Weight
-      // (dist + epsilon) ensures that if distances are equal (e.g. all empty), 
-      // the day with fewer places wins.
-      const score = (dist + 0.0001) * (1 + day.places.length * 2.0);
+      // Load Balancing Adjustment (V4.11 Fix)
+      // distance + penalty based on stop count. 
+      // 0.005 degrees is ~500m. 
+      const imbalancePenalty = day.places.length * 0.005; 
+      const adjustedDist = dist + imbalancePenalty;
 
-      if (score < minDistance) {
-        minDistance = score;
+      if (adjustedDist < minDistance) {
+        minDistance = adjustedDist;
         bestDay = dayIdx;
       }
     });

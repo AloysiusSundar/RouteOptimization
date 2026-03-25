@@ -13,6 +13,7 @@ export interface ScheduleStop {
   day: string;
   date: string;
   time: string;
+  isReservation?: boolean; // V5.1 Flag for exports
 }
 
 export interface ActiveHours {
@@ -130,7 +131,8 @@ export function generateSchedule(
       departure: new Date(visitEnd),
       day: arrivalTime.toLocaleDateString('en-US', { weekday: 'long' }),
       date: arrivalTime.toLocaleDateString('en-CA'),
-      time: arrivalTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+      time: arrivalTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      isReservation: !!place.reservation_time
     });
   }
 

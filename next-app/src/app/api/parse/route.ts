@@ -20,37 +20,50 @@ export async function POST(req: Request) {
       Rules:
       1. IDENTIFY THE BASE CITY/REGION (e.g., New York, Tokyo, London).
       2. IDENTIFY THE STAY LOCATION / HOTEL (e.g. "Hilton", "staying at my friend's place in Shinjuku").
-      3. CRITICAL: Set "stayLocation" ONLY if the user explicitly mentions "staying at", "hotel", "accommodation", "Airbnb", or "friend's house". If NO accommodation is mentioned, the "stayLocation" field MUST be an empty string (""). DO NOT default it to the base city.
-      4. TRIP LENGTH: Extract the number of "days" (integer) from phrases like "3 day trip", "for 4 days", "next 3 days". If "weekend" is mentioned, set "days" to 2. Default to 1 if not specified.
-      5. APPEND THE BASE CITY NAME TO EVERY PLACE NAME and the STAY LOCATION (e.g. "Met Museum" -> "Met Museum, NYC"). This is CRITICAL for geocoding accuracy.
-      6. If the user mentions "tomorrow", "next week", etc., calculate based on ${today}.
-      7. Durations should be in minutes (default 60 if not specified).
-      8. isReservation should be true ONLY if they clearly mention a booking, reservation, or fixed time.
-      9. If reservationTime is mentioned, format as HH:MM.
-      10. Output Schema:
+         CRITICAL: Only populate stayLocation if the user explicitly names a hotel, apartment, or address. 
+         IF the user only mentions the city (e.g. "Plan a trip to SF"), stayLocation MUST BE NULL or empty string.
+         DO NOT set stayLocation to the name of the Base City itself.
+      3. APPEND THE BASE CITY NAME TO EVERY PLACE NAME (e.g. "Met Museum" -> "Met Museum, NYC"). This is CRITICAL for geocoding accuracy.
+      4. If the user mentions "tomorrow", "next week", etc., calculate based on ${today}.
+      5. Durations should be in minutes (default 60 if not specified).
+      6. isReservation should be true ONLY if they clearly mention a booking, reservation, or fixed time.
+      7. If reservationTime is mentioned, format as HH:MM.
+      8. Output Schema:
       {
         "startDate": "YYYY-MM-DD",
         "days": number,
         "baseCity": "string",
-        "stayLocation": "string",
+        "stayLocation": "string | null",
         "places": [
           { "name": "string", "duration": number, "isReservation": boolean, "reservationDate": "YYYY-MM-DD", "reservationTime": "HH:MM" }
         ]
       }
     `;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: `${systemPrompt}\n\nUser text: ${prompt}` }]
-        }],
-        generationConfig: {
-          response_mime_type: "application/json"
-        }
-      })
-    });
+    async function tryModel(modelName: string) {
+      console.log(`🤖 Attempting extraction with ${modelName}...`);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: `${systemPrompt}\n\nUser text: ${prompt}` }]
+          }],
+          generationConfig: {
+            response_mime_type: "application/json"
+          }
+        })
+      });
+      return res;
+    }
+
+    let response = await tryModel('gemini-1.5-flash');
+    
+    // Fallback logic for rate limits (429) or other transient errors
+    if (response.status === 429 || !response.ok) {
+       console.warn(`⚠️ Primary model failed (${response.status}). Falling back to lite-preview...`);
+       response = await tryModel('gemini-3.1-flash-lite-preview');
+    }
 
     const data = await response.json();
     

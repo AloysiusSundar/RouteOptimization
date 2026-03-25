@@ -5,10 +5,10 @@ import dynamic from 'next/dynamic';
 import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } from '@/lib/ScheduleGenerator';
 import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
-import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Download, Car, Footprints, Bike } from 'lucide-react';
+import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
 import { clusterPlaces } from '@/lib/Clusterer';
-import { downloadCSV } from '@/lib/Exporter';
+import { exportToCsv, exportToIcal } from '@/lib/ExportUtils';
 
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
 
@@ -51,7 +51,7 @@ export default function Home() {
   const [recommendations, setRecommendations] = useState<POI[]>([]);
   const [isRecommending, setIsRecommending] = useState(false);
   const [interest, setInterest] = useState('Top tourist attractions, museums, and historical landmarks');
-  const [transportProfile, setTransportProfile] = useState('driving-car');
+  const [transportMode, setTransportMode] = useState<string>('driving-car');
 
   // Base City Geocoding (Debounced)
   useEffect(() => {
@@ -124,14 +124,6 @@ export default function Home() {
     setActiveSearchIdx(null);
     setSuggestions([]);
   };
-
-  // Auto-replan when transport mode changes (Premium UX) (V6.0)
-  useEffect(() => {
-    if (schedule && schedule.length > 0) {
-      handlePlanTour();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transportProfile]);
 
   useEffect(() => {
     const newActiveHours: Record<string, ActiveHours> = { ...activeHours };
@@ -255,7 +247,12 @@ export default function Home() {
       // NEW: Cluster destinations into Days (V4.1 Feature)
       console.log(`🎯 Clustering destinations into ${tripLength} logical days...`);
       const clusteredDays = clusterPlaces(
-        validPlaces.map((p, i: number) => ({ ...p, coords: coords[i], reservation_date: p.reservation_date || '' })),
+        validPlaces.map((p, i: number) => ({ 
+          ...p, 
+          coords: coords[i], 
+          reservation_date: p.reservation_date || '',
+          is_reservation: !!p.is_reservation
+        })),
         startDate,
         tripLength,
         accommodationCoords || baseCityCoords // Stay location is priority anchor
@@ -302,7 +299,7 @@ export default function Home() {
             dayPlaces = [{ name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, forcedDate: forcedDateStr }, ...dayPlaces];
         }
 
-        const dayDurations = await getDurationsMatrix(dayCoords, transportProfile);
+        const dayDurations = await getDurationsMatrix(dayCoords, transportMode);
         const { order: dayOrder } = optimizeRoute(
           dayCoords,
           dayDurations,
@@ -341,7 +338,7 @@ export default function Home() {
 
       // Step 3: Generate Schedule
       // Since we already ordered them by day and then by proximity, durations need updating
-      const finalDurations = await getDurationsMatrix(finalOrderedCoords, transportProfile);
+      const finalDurations = await getDurationsMatrix(finalOrderedCoords, transportMode);
       
       const sched = generateSchedule(
         finalOrderedPlaces,
@@ -355,7 +352,7 @@ export default function Home() {
       console.log('📅 Generated Schedule:', sched);
 
       console.log(`🗺️ Fetching full optimized route polyline for ${finalOrderedCoords.length} stops...`);
-      const fullGeoJson = await getRoutePolyline(finalOrderedCoords, transportProfile);
+      const fullGeoJson = await getRoutePolyline(finalOrderedCoords, transportMode);
       
       // NEW: Generate focused polylines for each day (V4.8)
       const allRouteGeoJsons: Record<string, any> = { 'all': fullGeoJson };
@@ -366,7 +363,7 @@ export default function Home() {
          const dayCount = dayStopCounts[dayIdx];
          if (dayCount > 1) {
             const dayCoords = finalOrderedCoords.slice(sliceStart, sliceStart + dayCount);
-            allRouteGeoJsons[dayIdx.toString()] = await getRoutePolyline(dayCoords, transportProfile);
+            allRouteGeoJsons[dayIdx.toString()] = await getRoutePolyline(dayCoords, transportMode);
          }
          sliceStart += dayCount;
       }
@@ -606,29 +603,27 @@ export default function Home() {
                 <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Days</label>
                 <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none" type="number" min={1} max={30} value={tripLength} onChange={e => setTripLength(parseInt(e.target.value) || 1)} />
               </div>
-
-              {/* Transport Mode Toggle (V6.0) */}
-              <div className="col-span-2 mt-2">
-                <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-secondary)]/70 uppercase ml-1 block mb-2">Transport Mode</label>
-                <div className="flex bg-white/5 p-1 rounded-[1.25rem] border border-white/10 gap-1">
-                  {[
-                    { id: 'driving-car', icon: Car, label: 'Driving' },
-                    { id: 'foot-walking', icon: Footprints, label: 'Walking' },
-                    { id: 'cycling-regular', icon: Bike, label: 'Biking' }
-                  ].map((mode) => (
-                    <button
-                      key={mode.id}
-                      onClick={() => setTransportProfile(mode.id)}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-                        transportProfile === mode.id 
-                          ? 'bg-[var(--color-secondary)] text-white shadow-[0_0_15px_rgba(83,225,111,0.4)]' 
-                          : 'text-white/40 hover:bg-white/5 hover:text-white'
-                      }`}
-                    >
-                      <mode.icon size={14} />
-                      {mode.label}
-                    </button>
-                  ))}
+              <div className="space-y-1.5 col-span-2 mt-1">
+                <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Travel Mode</label>
+                <div className="grid grid-cols-3 bg-white/5 rounded-2xl p-1 gap-1 border border-white/10">
+                  <button 
+                    onClick={() => setTransportMode('driving-car')}
+                    className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'driving-car' ? 'bg-[var(--color-secondary)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+                  >
+                    <Car size={14} /> Car
+                  </button>
+                  <button 
+                    onClick={() => setTransportMode('foot-walking')}
+                    className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'foot-walking' ? 'bg-[var(--color-secondary)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+                  >
+                    <Footprints size={14} /> Walk
+                  </button>
+                  <button 
+                    onClick={() => setTransportMode('cycling-regular')}
+                    className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'cycling-regular' ? 'bg-[var(--color-secondary)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+                  >
+                    <Bike size={14} /> Bike
+                  </button>
                 </div>
               </div>
             </div>
@@ -837,20 +832,26 @@ export default function Home() {
         {schedule && schedule.length > 0 && (
           <div className="absolute right-10 top-24 bottom-10 w-96 flex flex-col gap-4 z-20">
             <div className="bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-3xl p-6 border border-[var(--color-outline-variant)]/10 flex-1 overflow-y-auto shadow-2xl scrollbar-thin scrollbar-thumb-white/10">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-[var(--color-on-surface)] flex items-center gap-2">
+              <h2 className="text-xl font-bold text-[var(--color-on-surface)] mb-6 flex items-center justify-between gap-2">
+                 <div className="flex items-center gap-2">
                    <MapPin className="text-[var(--color-secondary)]" size={20} />
                    Optimized Plan
-                </h2>
-                <button 
-                  onClick={() => schedule && downloadCSV(schedule)}
-                  className="p-2 mr-[-8px] rounded-full hover:bg-white/5 text-[var(--color-secondary)] hover:text-white transition-all group relative"
-                  title="Download CSV"
-                >
-                  <Download size={18} />
-                  <span className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-black/80 text-[9px] text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Export to CSV</span>
-                </button>
-              </div>
+                 </div>
+                 <div className="flex gap-2">
+                   <button 
+                     onClick={() => schedule && exportToCsv(schedule)}
+                     className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-xl hover:bg-[var(--color-primary)] hover:text-black transition-all shadow-lg active:scale-95"
+                   >
+                     CSV
+                   </button>
+                   <button 
+                     onClick={() => schedule && exportToIcal(schedule)}
+                     className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-xl hover:bg-[var(--color-secondary)] hover:text-black transition-all shadow-lg active:scale-95"
+                   >
+                     ICAL
+                   </button>
+                 </div>
+              </h2>
               <div className="space-y-6 border-l border-[var(--color-primary)]/30 ml-2 pl-6 relative">
                 {(() => {
                   let realStopCounter = 0;
