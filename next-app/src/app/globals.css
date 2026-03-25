@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-on-secondary: #003911;
+  --color-inverse-primary: #005bc1;
+  --color-surface-container-lowest: #0e0e0e;
+  --color-outline: #8b90a0;
+  --color-on-background: #e5e2e1;
+  --color-background: #131313;
+  --color-primary-fixed-dim: #adc6ff;
+  --color-on-secondary-fixed: #002107;
+  --color-tertiary: #ffb595;
+  --color-on-secondary-fixed-variant: #00531c;
+  --color-on-error: #690005;
+  --color-secondary-container: #05b046;
+  --color-on-primary: #002e69;
+  --color-surface-container-highest: #353534;
+  --color-tertiary-container: #ef6719;
+  --color-on-primary-fixed: #001a41;
+  --color-primary-container: #4b8eff;
+  --color-on-tertiary-container: #4c1a00;
+  --color-error: #ffb4ab;
+  --color-secondary-fixed: #72fe88;
+  --color-on-surface-variant: #c1c6d7;
+  --color-inverse-on-surface: #313030;
+  --color-outline-variant: #414755;
+  --color-on-tertiary: #571e00;
+  --color-on-surface: #e5e2e1;
+  --color-surface-container-low: #1c1b1b;
+  --color-on-secondary-container: #003a11;
+  --color-error-container: #93000a;
+  --color-on-primary-fixed-variant: #004493;
+  --color-surface-container-high: #2a2a2a;
+  --color-on-tertiary-fixed: #351000;
+  --color-surface-dim: #131313;
+  --color-surface: #131313;
+  --color-tertiary-fixed: #ffdbcc;
+  --color-surface-bright: #3a3939;
+  --color-on-error-container: #ffdad6;
+  --color-tertiary-fixed-dim: #ffb595;
+  --color-surface-variant: #353534;
+  --color-secondary: #53e16f;
+  --color-primary: #adc6ff;
+  --color-secondary-fixed-dim: #53e16f;
+  --color-on-primary-container: #00285c;
+  --color-primary-fixed: #d8e2ff;
+  --color-surface-tint: #adc6ff;
+  --color-surface-container: #201f1f;
+  --color-inverse-surface: #e5e2e1;
+  --color-on-tertiary-fixed-variant: #7c2e00;
+
+  --font-headline: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-label: "Inter", sans-serif;
+}
+
+@layer utilities {
+  .glass-panel {
+    background: rgba(14, 14, 14, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  font-family: var(--font-body);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-outline-variant); border-radius: 10px; }
