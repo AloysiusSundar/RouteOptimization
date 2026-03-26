@@ -92,10 +92,14 @@ export async function getTomTomLegDetails(origin: [number, number], destination:
     const route = data.routes?.[0]?.summary;
     if (!route) return null;
 
+    const live = route.travelTimeInSeconds / 60;
+    const historical = route.historicTrafficTravelTimeInSeconds / 60;
+    const noTraffic = route.noTrafficTravelTimeInSeconds / 60;
+
     return {
-      liveMinutes: route.travelTimeInSeconds / 60,
-      historicalMinutes: route.historicTrafficTravelTimeInSeconds / 60,
-      noTrafficMinutes: route.noTrafficTravelTimeInSeconds / 60
+      liveMinutes: live,
+      historicalMinutes: historical || live || noTraffic || 0.1,
+      noTrafficMinutes: noTraffic || live || 0.1
     };
   } catch (err) {
     return null;

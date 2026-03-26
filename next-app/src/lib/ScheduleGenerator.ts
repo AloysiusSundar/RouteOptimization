@@ -142,7 +142,7 @@ export function generateSchedule(
       trafficDelayMinutes: (i > 0 && baseDurationsMatrix) 
         ? Math.max(0, durationsMatrix[order[i-1]][idx] - baseDurationsMatrix[order[i-1]][idx]) 
         : 0,
-      historicalMinutes: (i > 0 && historicalDurationsMatrix) 
+      historicalMinutes: (i > 0 && historicalDurationsMatrix && historicalDurationsMatrix[order[i-1]][idx] > 0) 
         ? historicalDurationsMatrix[order[i-1]][idx] 
         : (i > 0 ? durationsMatrix[order[i-1]][idx] : 0)
     });

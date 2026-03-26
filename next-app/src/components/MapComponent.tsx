@@ -205,34 +205,45 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
               >
                  {segment.travelMinutes !== undefined && (
                    <Tooltip sticky direction="top" interactive={false} className="leaflet-tooltip-tripit">
-                     <div className="flex flex-col gap-1 min-w-[120px]">
-                       <div className="flex items-center gap-2">
-                         <Activity size={12} className="text-[var(--color-secondary)]" />
-                         <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Live Drive Time:</span>
-                         <span className="text-xs font-black text-[var(--color-primary)]">{segment.travelMinutes.toFixed(1)} mins</span>
+                     <div className="flex flex-col gap-2 min-w-[180px] p-0.5">
+                       {/* Header: Drive Time (Precision Alignment) */}
+                       <div className="flex items-baseline justify-between w-full">
+                         <div className="flex items-center gap-1.5 min-w-0">
+                           <Activity size={10} className="text-[var(--color-secondary)] shrink-0 translate-y-[-1px]" />
+                           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 truncate">Drive Time</span>
+                         </div>
+                         <span className="text-sm font-black text-[var(--color-primary)] ml-4 tabular-nums">{segment.travelMinutes.toFixed(1)}m</span>
                        </div>
                        
+                       <div className="h-px bg-white/5 w-full"></div>
+
+                       {/* Traffic Status Badge (Robust Hybrid) */}
                        {(() => {
                          const delay = segment.travelMinutes - segment.historicalMinutes;
-                         const delayRatio = delay / Math.max(0.1, segment.historicalMinutes);
+                         const baseline = Math.max(0.5, segment.historicalMinutes);
+                         const delayPercent = Math.round((delay / baseline) * 100);
+                         const isSignificant = delay > 0.5 || Math.abs(delayPercent) >= 15;
                          
-                         if (delayRatio > 0.1) {
-                           // NOT smooth flow: Show ONLY the delay stats as requested
+                         if (!isSignificant) {
                            return (
-                             <div className={`flex items-center gap-2 px-2 py-0.5 rounded-full border ${delayRatio > 0.4 ? 'bg-red-500/20 border-red-500/30' : 'bg-orange-500/20 border-orange-500/30'}`}>
-                               <span className={`text-[9px] font-bold uppercase tracking-tighter ${delayRatio > 0.4 ? 'text-red-400' : 'text-orange-400'}`}>
-                                 {delay > 0 ? '+' : ''}{delay.toFixed(1)}m relative to usual
-                               </span>
-                             </div>
-                           );
-                         } else {
-                           // Smooth flow: Show the label
-                           return (
-                             <div className="flex items-center gap-2 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30">
-                               <span className="text-[9px] font-bold text-green-400 uppercase tracking-tighter">Smooth Flow</span>
+                             <div className="flex items-center justify-center px-2 py-1.5 rounded-lg border border-green-500/20 bg-green-500/10 text-center">
+                               <span className="text-[9px] font-bold uppercase tracking-widest text-green-400">Smooth Flow</span>
                              </div>
                            );
                          }
+
+                         const isSlower = delay > 0;
+                         const colorClass = isSlower 
+                           ? (delayPercent > 40 ? 'bg-red-500/15 border-red-500/25 text-red-400' : 'bg-orange-500/15 border-orange-500/20 text-orange-400')
+                           : 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400';
+
+                         return (
+                           <div className={`flex items-center justify-center px-2 py-1.5 rounded-lg border text-center ${colorClass.split(' ').slice(0,2).join(' ')}`}>
+                             <span className={`text-[9px] font-bold uppercase tracking-widest ${colorClass.split(' ').slice(2).join(' ')}`}>
+                               {delay > 0 ? '+' : ''}{Math.abs(delay).toFixed(1)}m {isSlower ? 'slower' : 'faster'} than usual
+                             </span>
+                           </div>
+                         );
                        })()}
                      </div>
                    </Tooltip>
