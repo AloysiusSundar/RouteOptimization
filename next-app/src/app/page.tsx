@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } from '@/lib/ScheduleGenerator';
 import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
-import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck } from 'lucide-react';
+import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2 } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
 import { clusterPlaces } from '@/lib/Clusterer';
 import { exportToCsv, exportToIcal } from '@/lib/ExportUtils';
@@ -54,6 +54,8 @@ export default function Home() {
     const [isRecommending, setIsRecommending] = useState(false);
     const [interest, setInterest] = useState('Top tourist attractions, museums, and historical landmarks');
     const [transportMode, setTransportMode] = useState<string>('driving-car');
+    const [isConfigExpanded, setIsConfigExpanded] = useState(true);
+    const [isPlanExpanded, setIsPlanExpanded] = useState(true);
 
     // Base City Geocoding (Debounced)
     useEffect(() => {
@@ -436,12 +438,14 @@ export default function Home() {
             ? places.filter(p => p.is_reservation).map(p => ({
                 name: p.name,
                 date: p.reservation_date,
-                time: p.reservation_clock
+                time: p.reservation_clock,
+                latlon: p.coords
             }))
             : currentSchedule.filter(s => s.isReservation).map(s => ({
                 name: s.place,
                 date: s.date,
-                time: s.time
+                time: s.time,
+                latlon: s.latlon
             }));
 
         return {
@@ -592,32 +596,32 @@ export default function Home() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1">
-                            <div className="flex items-center gap-2 text-[var(--color-primary)] opacity-60">
+                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-primary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                            <div className="flex items-center gap-2 text-[var(--color-primary)] opacity-60 group-hover:opacity-100 transition-opacity">
                                 <MapPin size={10} />
                                 <span className="text-[8px] font-bold uppercase tracking-widest">Stops</span>
                             </div>
                             <div className="text-lg font-black text-white">{analytics.stops}</div>
                         </div>
 
-                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1">
-                            <div className="flex items-center gap-2 text-[var(--color-secondary)] opacity-60">
+                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-secondary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                            <div className="flex items-center gap-2 text-[var(--color-secondary)] opacity-60 group-hover:opacity-100 transition-opacity">
                                 <Clock size={10} />
                                 <span className="text-[8px] font-bold uppercase tracking-widest">Hours</span>
                             </div>
                             <div className="text-lg font-black text-white">{analytics.hours}</div>
                         </div>
 
-                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1">
-                            <div className="flex items-center gap-2 text-blue-400 opacity-60">
+                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-blue-400/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                            <div className="flex items-center gap-2 text-blue-400 opacity-60 group-hover:opacity-100 transition-opacity">
                                 <Route size={10} />
                                 <span className="text-[8px] font-bold uppercase tracking-widest">Distance</span>
                             </div>
                             <div className="text-lg font-black text-white">{analytics.distance} <span className="text-[10px] text-white/40">km</span></div>
                         </div>
 
-                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1">
-                            <div className="flex items-center gap-2 text-purple-400 opacity-60">
+                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-purple-400/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                            <div className="flex items-center gap-2 text-purple-400 opacity-60 group-hover:opacity-100 transition-opacity">
                                 <CalendarCheck size={10} />
                                 <span className="text-[8px] font-bold uppercase tracking-widest">Bookings</span>
                             </div>
@@ -633,12 +637,16 @@ export default function Home() {
                              </div>
                              <div className="space-y-2">
                                  {analytics.reservationDetails.map((res, i) => (
-                                     <div key={i} className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center justify-between group/res hover:bg-white/5 transition-all">
+                                     <div 
+                                         key={i} 
+                                         onClick={() => res.latlon && handleSpotlight(res.name, res.latlon[0], res.latlon[1])}
+                                         className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center justify-between group/res hover:bg-white/5 hover:border-[var(--color-primary)]/30 hover:-translate-y-0.5 transition-all cursor-pointer shadow-lg active:scale-[0.98]"
+                                     >
                                          <div className="space-y-0.5">
                                              <div className="text-[11px] font-bold text-white group-hover/res:text-[var(--color-primary)] transition-colors line-clamp-1">{res.name}</div>
                                              <div className="text-[9px] text-white/40 uppercase tracking-wider">{res.date}</div>
                                          </div>
-                                         <div className="text-[10px] font-mono font-bold text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 px-2 py-1 rounded-lg">
+                                         <div className="text-[10px] font-mono font-bold text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 px-2 py-1 rounded-lg group-hover/res:bg-[var(--color-secondary)] group-hover/res:text-black transition-all">
                                              {res.time}
                                          </div>
                                      </div>
@@ -740,24 +748,35 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)] via-transparent to-transparent pointer-events-none"></div>
                 </div>
 
-                {/* Configuration Panel */}
-                <div className="absolute left-10 top-24 bottom-10 w-[440px] z-20 flex flex-col gap-4 overflow-hidden">
-                    <section className="bg-[var(--color-surface-container-low)]/90 backdrop-blur-md rounded-[2.5rem] p-7 shadow-2xl border border-white/5 flex flex-col gap-5 overflow-y-auto h-full scrollbar-none">
-                        <div className="space-y-1">
-                            <div className="flex items-center justify-between mb-1">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-[var(--color-secondary)] shadow-[0_0_8px_rgba(83,225,111,0.6)]"></div>
-                                    <span className="text-[10px] font-bold tracking-[0.1em] text-[var(--color-secondary)] uppercase">AI Optimization Panel</span>
-                                </div>
-                                <button
-                                    onClick={() => setIsAiOpen(!isAiOpen)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${isAiOpen ? 'bg-[var(--color-primary-container)] text-[var(--color-on-primary-container)] border-transparent shadow-[0_0_12px_var(--color-primary)]' : 'bg-transparent text-[var(--color-primary)] border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/10'}`}
-                                >
-                                    <Wand2 size={12} />
-                                    AI Magic Wand
-                                </button>
-                            </div>
-                            <h2 className="text-2xl font-bold text-[var(--color-on-surface)] tracking-tight">Configure Your Voyage</h2>
+                {/* Configuration Panel (V7.0 Zen Mode) */}
+                <div className={`absolute left-10 top-24 z-[100] flex flex-col gap-4 transition-all duration-500 ease-in-out ${isConfigExpanded ? 'bottom-10 w-[440px]' : 'w-48 h-14'}`}>
+                    <section className={`bg-[var(--color-surface-container-low)]/90 backdrop-blur-md rounded-[2.5rem] shadow-2xl border border-white/5 transition-all duration-500 overflow-hidden ${isConfigExpanded ? 'p-7 flex flex-col gap-5 h-full overflow-y-auto scrollbar-none' : 'p-0 h-full flex items-center'}`}>
+                        {isConfigExpanded ? (
+                            <>
+                                <div className="space-y-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-[var(--color-secondary)] shadow-[0_0_8px_rgba(83,225,111,0.6)]"></div>
+                                            <span className="text-[10px] font-bold tracking-[0.1em] text-[var(--color-secondary)] uppercase">AI Optimization Panel</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setIsAiOpen(!isAiOpen)}
+                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${isAiOpen ? 'bg-[var(--color-primary-container)] text-[var(--color-on-primary-container)] border-transparent shadow-[0_0_12px_var(--color-primary)]' : 'bg-transparent text-[var(--color-primary)] border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/10'}`}
+                                            >
+                                                <Wand2 size={12} />
+                                                Magic
+                                            </button>
+                                            <button 
+                                                onClick={() => setIsConfigExpanded(false)}
+                                                className="p-2 hover:bg-white/5 rounded-xl text-white/20 hover:text-white transition-all"
+                                                title="Minimize"
+                                            >
+                                                <Minimize2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-[var(--color-on-surface)] tracking-tight">Configure Your Voyage</h2>
 
                             {isAiOpen && (
                                 <div className="mt-4 p-4 bg-[var(--color-surface-container-lowest)] rounded-2xl border border-[var(--color-primary)]/20 animate-in fade-in slide-in-from-top-2 relative overflow-hidden">
@@ -1066,19 +1085,43 @@ export default function Home() {
                         >
                             {isPlanning ? <><Loader2 className="animate-spin" size={18} /> Routing...</> : 'Generate Optimized Itinerary'}
                         </button>
+                            </>
+                        ) : (
+                            <button 
+                                onClick={() => setIsConfigExpanded(true)}
+                                className="w-full h-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-[var(--color-secondary)] shadow-[0_0_8px_rgba(83,225,111,0.6)]"></div>
+                                    <span className="text-[11px] font-bold text-white/60 tracking-[0.2em] uppercase">Configure</span>
+                                </div>
+                                <Maximize2 size={16} className="text-white/20 group-hover:text-white transition-all duration-300" />
+                            </button>
+                        )}
                     </section>
                 </div>
 
-                {/* Right Side Context Cards (Schedule) */}
+                {/* Right Side Context Cards (Schedule) (V7.0 Zen Mode) */}
                 {schedule && schedule.length > 0 && (
-                    <div className="absolute right-10 top-24 bottom-10 w-96 flex flex-col gap-4 z-20">
-                        <div className="bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-3xl p-6 border border-[var(--color-outline-variant)]/10 flex-1 overflow-y-auto shadow-2xl scrollbar-thin scrollbar-thumb-white/10">
-                            <h2 className="text-xl font-bold text-[var(--color-on-surface)] mb-6 flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="text-[var(--color-secondary)]" size={20} />
-                                    Optimized Plan
-                                </div>
-                                <div className="flex gap-2">
+                    <div className={`absolute right-10 top-24 z-[100] flex flex-col gap-4 transition-all duration-500 ease-in-out ${isPlanExpanded ? 'bottom-10 w-96' : 'w-48 h-14'}`}>
+                        <div className={`bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-3xl border border-[var(--color-outline-variant)]/10 shadow-2xl transition-all duration-500 overflow-hidden ${isPlanExpanded ? 'p-6 flex-1 overflow-y-auto scrollbar-thin' : 'p-0 h-full flex items-center'}`}>
+                            {isPlanExpanded ? (
+                                <>
+                                    <h2 className="text-xl font-bold text-[var(--color-on-surface)] mb-6 flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="text-[var(--color-secondary)]" size={20} />
+                                            Optimized Plan
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => setIsPlanExpanded(false)}
+                                                className="p-1.5 hover:bg-white/5 rounded-lg text-white/20 hover:text-white transition-all mr-1"
+                                                title="Minimize"
+                                            >
+                                                <Minimize2 size={16} />
+                                            </button>
+                                        </div>
+                                        <div className="flex gap-2">
                                     <button
                                         onClick={() => schedule && exportToCsv(schedule)}
                                         className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-xl hover:bg-[var(--color-primary)] hover:text-black transition-all shadow-lg active:scale-95"
@@ -1136,9 +1179,22 @@ export default function Home() {
                                         });
                                 })()}
                             </div>
-                        </div>
-                    </div>
-                )}
+                        </>
+                    ) : (
+                        <button 
+                            onClick={() => setIsPlanExpanded(true)}
+                            className="w-full h-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <MapPin className="text-[var(--color-secondary)]" size={16} />
+                                <span className="text-[11px] font-bold text-white/60 tracking-[0.2em] uppercase">Itinerary</span>
+                            </div>
+                            <Maximize2 size={16} className="text-white/20 group-hover:text-white transition-all duration-300" />
+                        </button>
+                    )}
+                </div>
+            </div>
+        )}
             </main>
         </div>
     );
