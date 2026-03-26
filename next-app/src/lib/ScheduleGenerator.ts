@@ -13,7 +13,10 @@ export interface ScheduleStop {
   day: string;
   date: string;
   time: string;
-  isReservation?: boolean; // V5.1 Flag for exports
+  isReservation?: boolean;
+  travelMinutes?: number;
+  trafficDelayMinutes?: number;
+  historicalMinutes?: number;
 }
 
 export interface ActiveHours {
@@ -27,7 +30,9 @@ export function generateSchedule(
   order: number[],
   startDate: Date,
   activeHours: Record<string, ActiveHours>,
-  durationsMatrix: number[][] // From ORS (minutes)
+  durationsMatrix: number[][], // Traffic-aware (primary)
+  baseDurationsMatrix?: number[][], // Free-flow (Ideal)
+  historicalDurationsMatrix?: number[][] // Usual (Historical)
 ): ScheduleStop[] {
   const schedule: ScheduleStop[] = [];
 
@@ -132,7 +137,14 @@ export function generateSchedule(
       day: arrivalTime.toLocaleDateString('en-US', { weekday: 'long' }),
       date: arrivalTime.toLocaleDateString('en-CA'),
       time: arrivalTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-      isReservation: !!place.reservation_time
+      isReservation: !!place.reservation_time,
+      travelMinutes: i > 0 ? durationsMatrix[order[i-1]][idx] : 0,
+      trafficDelayMinutes: (i > 0 && baseDurationsMatrix) 
+        ? Math.max(0, durationsMatrix[order[i-1]][idx] - baseDurationsMatrix[order[i-1]][idx]) 
+        : 0,
+      historicalMinutes: (i > 0 && historicalDurationsMatrix) 
+        ? historicalDurationsMatrix[order[i-1]][idx] 
+        : (i > 0 ? durationsMatrix[order[i-1]][idx] : 0)
     });
   }
 

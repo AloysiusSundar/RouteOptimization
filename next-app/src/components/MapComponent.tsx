@@ -3,7 +3,8 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } fro
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { ScheduleStop } from '@/lib/ScheduleGenerator';
-import { useEffect, useMemo } from 'react';
+import { Activity } from 'lucide-react';
+import { useEffect, useMemo, useState, Fragment } from 'react';
 
 // fix leaflet icon issues in next.js
 const customIcon = L.icon({
@@ -32,6 +33,7 @@ interface MapProps {
 }
 
 export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerClick }: MapProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const defaultCenter: [number, number] = [40.7128, -74.0060]; // NYC default
   
   const { center, zoom } = useMemo(() => {
@@ -40,21 +42,36 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
     return { center: c, zoom: z };
   }, [coords]);
 
-  const routePositions: [number, number][] = [];
-  if (routeGeoJson && routeGeoJson.features?.length > 0) {
-    routeGeoJson.features.forEach((feature: any) => {
-      const geo = feature.geometry;
-      if (geo && geo.coordinates) {
-        if(geo.type === 'LineString') {
-           geo.coordinates.forEach((c: [number, number]) => routePositions.push([c[1], c[0]]));
-        } else if (geo.type === 'MultiLineString') {
-           geo.coordinates.forEach((line: [number, number][]) => {
-             line.forEach(c => routePositions.push([c[1], c[0]]));
-           });
-        }
-      }
-    });
-  }
+  const segments = useMemo(() => {
+    if (!routeGeoJson || !routeGeoJson.features || routeGeoJson.features.length === 0) return [];
+    
+    const feature = routeGeoJson.features[0];
+    const coords = feature.geometry.coordinates; // [lon, lat]
+    const wayPoints = feature.properties?.way_points;
+
+    if (!wayPoints || wayPoints.length < 2) {
+      // Fallback: draw as single segment
+      return [{
+        positions: coords.map((c: any) => [c[1], c[0]] as [number, number]),
+        travelMinutes: 0,
+        historicalMinutes: 0
+      }];
+    }
+
+    const result = [];
+    for (let i = 0; i < wayPoints.length - 1; i++) {
+        const startIdx = wayPoints[i];
+        const endIdx = wayPoints[i+1];
+        const segmentCoords = coords.slice(startIdx, endIdx + 1);
+        
+        result.push({
+            positions: segmentCoords.map((c: any) => [c[1], c[0]] as [number, number]),
+            travelMinutes: schedule?.[i+1]?.travelMinutes || 0,
+            historicalMinutes: schedule?.[i+1]?.historicalMinutes || 0
+        });
+    }
+    return result;
+  }, [routeGeoJson, schedule]);
 
   return (
     <div className="h-full w-full rounded-2xl overflow-hidden shadow-2xl z-0 relative">
@@ -93,6 +110,13 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
         .leaflet-tooltip-tripit:before {
           border-top-color: var(--color-surface-container-high) !important;
         }
+        @keyframes routeFlow {
+          from { stroke-dashoffset: 20; }
+          to { stroke-dashoffset: 0; }
+        }
+        .route-flow {
+          animation: routeFlow 1s linear infinite;
+        }
       `}} />
       <MapContainer 
         center={center} 
@@ -105,7 +129,7 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
-        {(() => {
+        {useMemo(() => {
           let realStopIndex = 0;
           return coords.map((coord, i) => {
             const stop = schedule?.[i];
@@ -123,7 +147,7 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
 
             return (
               <Marker 
-                key={i} 
+                key={`marker-${i}`} 
                 position={coord} 
                 icon={icon}
                 eventHandlers={{
@@ -146,7 +170,7 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
                       <div className="text-sm font-bold text-white">{stop.place}</div>
                       <div className="h-px bg-white/10 my-1"></div>
                       <div className="flex items-center gap-2 text-[10px] text-gray-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <Activity size={10} />
                         {stop.time} - {stop.departure.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                       </div>
                     </div>
@@ -155,10 +179,113 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
               </Marker>
             );
           });
+        }, [coords, schedule, onMarkerClick])}
+
+        {/* 1. Base Route Layer (Memoized) */}
+        {useMemo(() => (
+          segments.map((segment, idx) => (
+            <Fragment key={`base-seg-${idx}`}>
+              {/* 
+                THE BUFFER ZONE 🧲 
+                Invisible, 24px wide, handles ALL mouse logic.
+              */}
+              <Polyline 
+                positions={segment.positions} 
+                eventHandlers={{
+                  mouseover: () => setHoveredIndex(idx),
+                  mouseout: () => setHoveredIndex(null),
+                  click: () => setHoveredIndex(idx)
+                }}
+                pathOptions={{ 
+                  color: 'transparent', 
+                  weight: 24, 
+                  opacity: 0.1, 
+                  lineCap: 'round'
+                }}
+              >
+                 {segment.travelMinutes !== undefined && (
+                   <Tooltip sticky direction="top" interactive={false} className="leaflet-tooltip-tripit">
+                     <div className="flex flex-col gap-1 min-w-[120px]">
+                       <div className="flex items-center gap-2">
+                         <Activity size={12} className="text-[var(--color-secondary)]" />
+                         <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Live Drive Time:</span>
+                         <span className="text-xs font-black text-[var(--color-primary)]">{segment.travelMinutes.toFixed(1)} mins</span>
+                       </div>
+                       
+                       {(() => {
+                         const delay = segment.travelMinutes - segment.historicalMinutes;
+                         const delayRatio = delay / Math.max(0.1, segment.historicalMinutes);
+                         
+                         if (delayRatio > 0.1) {
+                           // NOT smooth flow: Show ONLY the delay stats as requested
+                           return (
+                             <div className={`flex items-center gap-2 px-2 py-0.5 rounded-full border ${delayRatio > 0.4 ? 'bg-red-500/20 border-red-500/30' : 'bg-orange-500/20 border-orange-500/30'}`}>
+                               <span className={`text-[9px] font-bold uppercase tracking-tighter ${delayRatio > 0.4 ? 'text-red-400' : 'text-orange-400'}`}>
+                                 {delay > 0 ? '+' : ''}{delay.toFixed(1)}m relative to usual
+                               </span>
+                             </div>
+                           );
+                         } else {
+                           // Smooth flow: Show the label
+                           return (
+                             <div className="flex items-center gap-2 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30">
+                               <span className="text-[9px] font-bold text-green-400 uppercase tracking-tighter">Smooth Flow</span>
+                             </div>
+                           );
+                         }
+                       })()}
+                     </div>
+                   </Tooltip>
+                 )}
+              </Polyline>
+              {/* THE BASE LINE (Visual only) */}
+              <Polyline 
+                positions={segment.positions} 
+                interactive={false}
+                pathOptions={{ 
+                  color: '#4b8eff', 
+                  weight: 4, 
+                  opacity: hoveredIndex !== null && hoveredIndex !== idx ? 0.2 : 0.6,
+                  lineCap: 'round'
+                }}
+              />
+            </Fragment>
+          ))
+        ), [segments, hoveredIndex])}
+
+        {/* 2. Active Focus Layer (Visual Overlay - Always on Top) */}
+        {hoveredIndex !== null && segments[hoveredIndex] && (() => {
+           const segment = segments[hoveredIndex];
+           return (
+             <Fragment key="active-focus-layer">
+               {/* Decorative Glow Backdrop (Non-interactive) */}
+               <Polyline 
+                 positions={segment.positions}
+                 interactive={false}
+                 pathOptions={{ 
+                   color: 'var(--color-primary)', 
+                   weight: 16, 
+                   opacity: 0.25,
+                   lineCap: 'round'
+                 }} 
+               />
+               
+               {/* Main Focus Line (Non-interactive) */}
+               <Polyline 
+                 positions={segment.positions} 
+                 interactive={false}
+                 pathOptions={{ 
+                   color: 'var(--color-secondary)', 
+                   weight: 6, 
+                   opacity: 1,
+                   lineCap: 'round',
+                   dashArray: '10 10',
+                   className: 'route-flow'
+                 }}
+               />
+             </Fragment>
+           );
         })()}
-        {routePositions.length > 0 && (
-           <Polyline positions={routePositions} pathOptions={{ color: '#4b8eff', weight: 4, opacity: 0.6 }} />
-        )}
       </MapContainer>
     </div>
   );

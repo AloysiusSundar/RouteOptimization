@@ -57,11 +57,11 @@ export async function POST(req: Request) {
       return res;
     }
 
-    let response = await tryModel('gemini-1.5-flash');
+    let response = await tryModel('gemini-2.5-flash');
     
     // Fallback logic for rate limits (429) or other transient errors
     if (response.status === 429 || !response.ok) {
-       console.warn(`⚠️ Primary model failed (${response.status}). Falling back to lite-preview...`);
+       console.warn(`⚠️ Primary model failed (${response.status}). Falling back to modern flash lite...`);
        response = await tryModel('gemini-3.1-flash-lite-preview');
     }
 

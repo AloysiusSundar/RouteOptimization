@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } from '@/lib/ScheduleGenerator';
 import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
+import { getTomTomDurationsMatrix, getTomTomLegDetails } from '@/lib/tomtomClient';
 import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2 } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
 import { clusterPlaces } from '@/lib/Clusterer';
@@ -311,7 +312,14 @@ export default function Home() {
                     dayPlaces = [{ name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, forcedDate: forcedDateStr }, ...dayPlaces];
                 }
 
-                const dayDurations = await getDurationsMatrix(dayCoords, transportMode);
+                // V7.2: Data-Proven Traffic Modeling (TomTom Priority)
+                let dayDurations = await getTomTomDurationsMatrix(dayCoords, transportMode);
+                if (dayDurations) {
+                    console.log('🚥 TomTom Traffic-Aware Matrix Acquired.');
+                } else {
+                    console.log('⚠️ TomTom Failed/Limit. Falling back to ORS base durations.');
+                    dayDurations = await getDurationsMatrix(dayCoords, transportMode);
+                }
                 const { order: dayOrder } = optimizeRoute(
                     dayCoords,
                     dayDurations,
@@ -350,7 +358,32 @@ export default function Home() {
 
             // Step 3: Generate Schedule
             // Since we already ordered them by day and then by proximity, durations need updating
-            const finalDurations = await getDurationsMatrix(finalOrderedCoords, transportMode);
+            // V7.8: Historical Baseline Integration (Live vs. Usual)
+            const baseDurations = await getDurationsMatrix(finalOrderedCoords, transportMode);
+            let finalDurations = await getTomTomDurationsMatrix(finalOrderedCoords, transportMode);
+            if (!finalDurations) {
+                finalDurations = baseDurations;
+            }
+
+            // Fetch historical "Usual" durations for each leg to calculate delay-sentiment
+            const historicalMatrix: number[][] = Array(finalOrderedCoords.length).fill(0).map(() => Array(finalOrderedCoords.length).fill(0));
+            
+            try {
+                const legPromises = [];
+                for (let i = 0; i < finalOrderedCoords.length - 1; i++) {
+                    legPromises.push((async (idx: number) => {
+                        const details = await getTomTomLegDetails(finalOrderedCoords[idx], finalOrderedCoords[idx+1], transportMode);
+                        if (details) {
+                            historicalMatrix[idx][idx+1] = details.historicalMinutes;
+                        } else {
+                            historicalMatrix[idx][idx+1] = baseDurations[idx][idx+1];
+                        }
+                    })(i));
+                }
+                await Promise.all(legPromises);
+            } catch (e) {
+                console.error('Failed to fetch historical baselines:', e);
+            }
 
             const sched = generateSchedule(
                 finalOrderedPlaces,
@@ -358,7 +391,9 @@ export default function Home() {
                 finalOrderedPlaces.map((_, idx: number) => idx), // It's already in order
                 new Date(startDate + "T00:00:00"),
                 activeHours,
-                finalDurations
+                finalDurations,
+                baseDurations,
+                historicalMatrix
             );
 
             console.log('📅 Generated Schedule:', sched);
@@ -425,7 +460,10 @@ export default function Home() {
 
         let displayHours = 0;
         if (currentSchedule.length > 0) {
-            displayHours = Math.ceil(currentSchedule.reduce((acc, s) => acc + (s.departure.getTime() - s.arrival.getTime()) / 60000, 0) / 60);
+            // V7.3: Total Trip Time (Visit + Travel/Traffic)
+            const firstArrival = currentSchedule[0].arrival.getTime();
+            const lastDeparture = currentSchedule[currentSchedule.length - 1].departure.getTime();
+            displayHours = Math.ceil((lastDeparture - firstArrival) / 3600000);
         } else if (isAll) {
             displayHours = Math.ceil(places.reduce((acc, p) => acc + p.visit_duration, 0) / 60);
         }
@@ -664,6 +702,9 @@ export default function Home() {
                             <div className="text-sm font-bold text-white flex items-center gap-2">
                                 Steady Explorer
                                 <Sparkles size={12} className="text-[var(--color-primary)] animate-pulse" />
+                            </div>
+                            <div className="text-[8px] text-[var(--color-secondary)] font-black uppercase tracking-[0.2em] mt-0.5 flex items-center gap-1">
+                                <Activity size={8} /> Traffic-Proven
                             </div>
                         </div>
                         <Activity size={24} className="text-[var(--color-primary)] opacity-40 group-hover:opacity-80 transition-opacity" />
