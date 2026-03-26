@@ -28,9 +28,10 @@ interface MapProps {
   coords: [number, number][];
   routeGeoJson?: any; 
   schedule?: ScheduleStop[] | null;
+  onMarkerClick?: (stop: ScheduleStop) => void;
 }
 
-export default function MapComponent({ coords, routeGeoJson, schedule }: MapProps) {
+export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerClick }: MapProps) {
   const defaultCenter: [number, number] = [40.7128, -74.0060]; // NYC default
   
   const { center, zoom } = useMemo(() => {
@@ -121,7 +122,16 @@ export default function MapComponent({ coords, routeGeoJson, schedule }: MapProp
             });
 
             return (
-              <Marker key={i} position={coord} icon={icon}>
+              <Marker 
+                key={i} 
+                position={coord} 
+                icon={icon}
+                eventHandlers={{
+                  click: () => {
+                    if (stop && onMarkerClick) onMarkerClick(stop);
+                  }
+                }}
+              >
                 <Popup>
                   <div className="text-gray-900 font-semibold p-1">
                     {isHotel ? '🏠' : `${realStopIndex}.`} {stop?.place || 'Stop'}

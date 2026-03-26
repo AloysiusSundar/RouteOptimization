@@ -15,6 +15,11 @@ export interface POI {
   lon: number;
   tags: Record<string, string>;
   score?: number;
+  photo?: string; // V6.0 Wiki Photo
+  summary?: string; // V6.0 Wiki Description
+  opening_hours?: string; // V6.0 OSM Hours
+  website?: string; // V6.0 OSM Website
+  pageId?: string; // V6.2 Wiki Page ID (Direct Links)
 }
 
 /**
@@ -115,7 +120,9 @@ export async function fetchNearbyPOIs(
         name: el.tags?.name || el.tags?.operator || el.tags?.tourism || "Unknown",
         lat: el.lat || el.center?.lat,
         lon: el.lon || el.center?.lon,
-        tags: el.tags || {}
+        tags: el.tags || {},
+        opening_hours: el.tags?.opening_hours,
+        website: el.tags?.website || el.tags?.["contact:website"]
       }))
       .filter((poi: POI) => poi.name !== "Unknown" && poi.lat && poi.lon);
 
