@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import dynamic from 'next/dynamic';
+import { Reorder } from 'framer-motion';
 import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } from '@/lib/ScheduleGenerator';
 import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
 import { getTomTomDurationsMatrix, getTomTomLegDetails } from '@/lib/tomtomClient';
-import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab } from 'lucide-react';
+import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab, Sun, Moon, Layers } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
 import { clusterPlaces } from '@/lib/Clusterer';
 import { exportToCsv, exportToIcal } from '@/lib/ExportUtils';
@@ -15,6 +16,7 @@ import { fetchWikiData, getOpenStatus } from '@/lib/WikiEnricher';
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
 
 interface UIPlace extends SchedulePlace {
+    id: string;
     is_reservation: boolean;
     reservation_date: string; // YYYY-MM-DD
     reservation_clock: string; // HH:MM
@@ -37,10 +39,10 @@ export default function Home() {
     const today = new Date().toISOString().split('T')[0];
 
     const [places, setPlaces] = useState<UIPlace[]>([
-        { name: '', visit_duration: 60, is_reservation: false, reservation_date: today, reservation_clock: '12:00' },
-        { name: '', visit_duration: 60, is_reservation: false, reservation_date: today, reservation_clock: '12:00' }
+        { id: 'initial-1', name: '', visit_duration: 60, is_reservation: false, reservation_date: today, reservation_clock: '12:00' },
+        { id: 'initial-2', name: '', visit_duration: 60, is_reservation: false, reservation_date: today, reservation_clock: '12:00' }
     ]);
-    const [activeSearchIdx, setActiveSearchIdx] = useState<number | null>(null);
+    const [activeSearch, setActiveSearch] = useState<{ type: 'place' | 'base' | 'stay', index?: number } | null>(null);
     const [suggestions, setSuggestions] = useState<{ name: string, label: string, coords: [number, number] }[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
 
@@ -77,6 +79,7 @@ export default function Home() {
     const [saveName, setSaveName] = useState('');
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
     const [mapMode, setMapMode] = useState<'drag' | 'pin'>('drag');
+    const [mapStyle, setMapStyle] = useState<'dark' | 'light' | 'voyager'>('dark');
 
     // Load Saved Trips on Mount
     useEffect(() => {
@@ -97,6 +100,7 @@ export default function Home() {
 
     const handleMapClick = (lat: number, lng: number) => {
         const newPlace: UIPlace = {
+            id: Math.random().toString(36).substr(2, 9),
             name: `Dropped Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
             visit_duration: 60,
             is_reservation: false,
@@ -116,50 +120,25 @@ export default function Home() {
         }
     };
 
-    // Base City Geocoding (Debounced)
-    useEffect(() => {
-        if (!baseCity || baseCity.length < 3) {
-            setBaseCityCoords(null);
-            return;
-        }
-        const timer = setTimeout(async () => {
-            try {
-                const coords = await getCoordinates(baseCity);
-                if (coords) setBaseCityCoords(coords);
-            } catch (err) {
-                console.warn('Silent fail geocoding base city for focus:', err);
-            }
-        }, 1000);
-        return () => clearTimeout(timer);
-    }, [baseCity]);
 
-    // Accommodation Geocoding (Debounced)
-    useEffect(() => {
-        if (!accommodation || accommodation.length < 3) {
-            setAccommodationCoords(null);
-            return;
-        }
-        const timer = setTimeout(async () => {
-            try {
-                const focus = baseCityCoords || undefined;
-                const coords = await getCoordinates(accommodation, focus);
-                if (coords) setAccommodationCoords(coords);
-            } catch (err) {
-                console.warn('Silent fail geocoding accommodation:', err);
-            }
-        }, 1000);
-        return () => clearTimeout(timer);
-    }, [accommodation, baseCityCoords]);
 
     // Autocomplete debouncing
     useEffect(() => {
-        if (activeSearchIdx === null) {
+        if (!activeSearch) {
             setSuggestions([]);
             return;
         }
 
-        const name = places[activeSearchIdx].name;
-        if (!name || name.length < 3) {
+        let queryInput = '';
+        if (activeSearch.type === 'place' && activeSearch.index !== undefined) {
+            queryInput = places[activeSearch.index].name;
+        } else if (activeSearch.type === 'base') {
+            queryInput = baseCity;
+        } else if (activeSearch.type === 'stay') {
+            queryInput = accommodation;
+        }
+
+        if (!queryInput || queryInput.length < 3) {
             setSuggestions([]);
             return;
         }
@@ -168,13 +147,13 @@ export default function Home() {
             setSearchLoading(true);
             // Bias towards existing stops OR the current Base City
             const bias = places.find(p => p.coords)?.coords || baseCityCoords || undefined;
-            const results = await getAutocompleteSuggestions(name, bias);
+            const results = await getAutocompleteSuggestions(queryInput, bias, 100); // 100km hard boundary
             setSuggestions(results);
             setSearchLoading(false);
         }, 400);
 
         return () => clearTimeout(timer);
-    }, [activeSearchIdx, places, baseCityCoords]);
+    }, [activeSearch, places, baseCityCoords, baseCity, accommodation]);
 
     const handleSelectSuggestion = (idx: number, suggestion: { name: string, label: string, coords: [number, number] }) => {
         const newPlaces = [...places];
@@ -184,7 +163,21 @@ export default function Home() {
             coords: suggestion.coords
         };
         setPlaces(newPlaces);
-        setActiveSearchIdx(null);
+        setActiveSearch(null);
+        setSuggestions([]);
+    };
+
+    const handleSelectBaseCitySuggestion = (suggestion: { name: string, label: string, coords: [number, number] }) => {
+        setBaseCity(suggestion.name);
+        setBaseCityCoords(suggestion.coords);
+        setActiveSearch(null);
+        setSuggestions([]);
+    };
+
+    const handleSelectStaySuggestion = (suggestion: { name: string, label: string, coords: [number, number] }) => {
+        setAccommodation(suggestion.name);
+        setAccommodationCoords(suggestion.coords);
+        setActiveSearch(null);
         setSuggestions([]);
     };
 
@@ -214,11 +207,12 @@ export default function Home() {
     };
 
     const handleAddPlace = () => {
-        setPlaces([...places, { name: '', visit_duration: 60, is_reservation: false, reservation_date: startDate, reservation_clock: '12:00' }]);
+        setPlaces([...places, { id: Math.random().toString(36).substr(2, 9), name: '', visit_duration: 60, is_reservation: false, reservation_date: startDate, reservation_clock: '12:00' }]);
     };
 
     const handleAddRecommended = (poi: POI) => {
         setPlaces([...places, {
+            id: Math.random().toString(36).substr(2, 9),
             name: poi.name,
             visit_duration: 120,
             is_reservation: false,
@@ -227,6 +221,12 @@ export default function Home() {
             coords: [poi.lat, poi.lon]
         }]);
         setRecommendations(prev => prev.filter(p => p.id !== poi.id));
+    };
+
+    const handleInspireMe = () => {
+        const categories = ['Museums', 'Street Art', 'Hidden Gems', 'Local Coffee', 'Panoramic Views', 'Botanical Gardens', 'Historic Sites', 'Modern Architecture', 'Local Markets', 'Traditional Crafts'];
+        const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+        setInterest(randomCategory);
     };
 
     const handleDiscover = async () => {
@@ -370,12 +370,16 @@ export default function Home() {
                     dayPlaces = [{ name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, forcedDate: forcedDateStr }, ...dayPlaces];
                 }
 
-                // V7.2: Data-Proven Traffic Modeling (TomTom Priority)
-                let dayDurations = await getTomTomDurationsMatrix(dayCoords, transportMode);
+                // V7.2: Data-Proven Traffic Modeling (TomTom Priority for small sets, ORS for large)
+                let dayDurations = null;
+                if (dayCoords.length <= 20) {
+                    dayDurations = await getTomTomDurationsMatrix(dayCoords, transportMode);
+                }
+                
                 if (dayDurations) {
                     console.log('🚥 TomTom Traffic-Aware Matrix Acquired.');
                 } else {
-                    console.log('⚠️ TomTom Failed/Limit. Falling back to ORS base durations.');
+                    console.log(`⚠️ ${dayCoords.length > 8 ? 'Large set' : 'TomTom Failed'}. Using ORS base durations for optimization speed.`);
                     dayDurations = await getDurationsMatrix(dayCoords, transportMode);
                 }
                 const { order: dayOrder } = optimizeRoute(
@@ -415,41 +419,42 @@ export default function Home() {
             console.log('🏁 Multi-Day Global Order:', finalOrderIndices);
 
             // Step 3: Generate Schedule
-            // Since we already ordered them by day and then by proximity, durations need updating
-            // V7.8: Historical Baseline Integration (Live vs. Usual)
+            // Optimization: We only need the durations for the SPECIFIC sequence found by the solver (N-1 legs).
+            // A full Matrix (N^2) for the whole trip is redundant and slow for 10+ stops.
             const baseDurations = await getDurationsMatrix(finalOrderedCoords, transportMode);
-            let finalDurations = await getTomTomDurationsMatrix(finalOrderedCoords, transportMode);
-            if (!finalDurations) {
-                finalDurations = baseDurations;
-            }
-
-            // Fetch historical "Usual" durations for each leg to calculate delay-sentiment
+            
+            // Sparse matrices for Schedule Generation
+            const liveMatrix: number[][] = Array(finalOrderedCoords.length).fill(0).map(() => Array(finalOrderedCoords.length).fill(0));
             const historicalMatrix: number[][] = Array(finalOrderedCoords.length).fill(0).map(() => Array(finalOrderedCoords.length).fill(0));
 
             try {
+                console.log(`📡 Fetching live traffic for ${finalOrderedCoords.length - 1} legs in parallel...`);
                 const legPromises = [];
                 for (let i = 0; i < finalOrderedCoords.length - 1; i++) {
                     legPromises.push((async (idx: number) => {
                         const details = await getTomTomLegDetails(finalOrderedCoords[idx], finalOrderedCoords[idx + 1], transportMode);
                         if (details) {
+                            liveMatrix[idx][idx + 1] = details.liveMinutes;
                             historicalMatrix[idx][idx + 1] = details.historicalMinutes;
                         } else {
+                            // Fallback to ORS if specific leg fetch fails
+                            liveMatrix[idx][idx + 1] = baseDurations[idx][idx + 1];
                             historicalMatrix[idx][idx + 1] = baseDurations[idx][idx + 1];
                         }
                     })(i));
                 }
                 await Promise.all(legPromises);
             } catch (e) {
-                console.error('Failed to fetch historical baselines:', e);
+                console.error('Failed to fetch leg details:', e);
             }
 
             const sched = generateSchedule(
                 finalOrderedPlaces,
                 finalOrderedCoords,
-                finalOrderedPlaces.map((_, idx: number) => idx), // It's already in order
+                finalOrderedPlaces.map((_, idx: number) => idx), 
                 new Date(startDate + "T00:00:00"),
                 activeHours,
-                finalDurations,
+                liveMatrix,
                 baseDurations,
                 historicalMatrix
             );
@@ -597,10 +602,11 @@ export default function Home() {
                 const verifiedPlaces: UIPlace[] = [];
                 for (const p of data.places) {
                     console.log(`🔍 AI Auto-Verifying: ${p.name}...`);
-                    const suggestions = await getAutocompleteSuggestions(p.name, focus);
+                    const suggestions = await getAutocompleteSuggestions(p.name, focus, 100);
                     const bestMatch = suggestions[0];
 
                     verifiedPlaces.push({
+                        id: Math.random().toString(36).substr(2, 9),
                         name: bestMatch?.name || p.name,
                         coords: bestMatch?.coords, // Lock in the coordinates immediately
                         visit_duration: p.duration || 60,
@@ -999,6 +1005,31 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-center gap-4">
+                        {/* Map Style Switcher */}
+                        <div className="flex items-center bg-[var(--color-surface-container-low)] rounded-xl p-0.5 border border-white/10 shadow-lg">
+                            <button
+                                onClick={() => setMapStyle('dark')}
+                                className={`p-1.5 rounded-lg transition-all ${mapStyle === 'dark' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
+                                title="Dark Matter"
+                            >
+                                <Moon size={14} />
+                            </button>
+                            <button
+                                onClick={() => setMapStyle('light')}
+                                className={`p-1.5 rounded-lg transition-all ${mapStyle === 'light' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
+                                title="Positron (Light)"
+                            >
+                                <Sun size={14} />
+                            </button>
+                            <button
+                                onClick={() => setMapStyle('voyager')}
+                                className={`p-1.5 rounded-lg transition-all ${mapStyle === 'voyager' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
+                                title="Voyager (Colorful)"
+                            >
+                                <Layers size={14} />
+                            </button>
+                        </div>
+
                         <button
                             onClick={() => setIsSaveModalOpen(true)}
                             className="flex items-center gap-2 bg-[var(--color-secondary)] text-black px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
@@ -1010,12 +1041,12 @@ export default function Home() {
 
                 {/* Day Navigation Bar (V4.4) */}
                 {schedule && schedule.length > 0 && (
-                    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[45] flex items-center gap-2 p-1.5 bg-[var(--color-surface-container-low)]/80 backdrop-blur-2xl rounded-2xl border border-white/5 shadow-2xl animate-in fade-in slide-in-from-top-4">
+                    <div className="fixed top-20 left-[calc(50%+9rem)] -translate-x-1/2 z-[45] flex items-center gap-2 p-1.5 bg-[var(--color-surface-container-low)]/80 backdrop-blur-2xl rounded-2xl border border-white/5 shadow-2xl animate-in fade-in slide-in-from-top-4">
                         <button
                             onClick={() => setSelectedDay('all')}
                             className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === 'all' ? 'bg-[var(--color-primary)] text-white shadow-[0_0_15px_var(--color-primary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         >
-                            Overview
+                            OVERVIEW
                         </button>
                         <div className="w-px h-4 bg-white/10 mx-1"></div>
                         {Array.from({ length: tripLength }).map((_, i) => (
@@ -1024,7 +1055,7 @@ export default function Home() {
                                 onClick={() => setSelectedDay(i)}
                                 className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === i ? 'bg-[var(--color-secondary)] text-white shadow-[0_0_15px_var(--color-secondary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                             >
-                                Day {i + 1}
+                                DAY {i + 1}
                             </button>
                         ))}
                     </div>
@@ -1061,6 +1092,7 @@ export default function Home() {
                         }
                         onMarkerClick={(s) => handleSpotlight(s.place, s.latlon[0], s.latlon[1])}
                         mapMode={mapMode}
+                        mapStyle={mapStyle}
                         onMapClick={handleMapClick}
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)] via-transparent to-transparent pointer-events-none"></div>
@@ -1139,25 +1171,71 @@ export default function Home() {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="col-span-2 grid grid-cols-2 gap-3">
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-1.5 relative">
                                             <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Trip Base City</label>
                                             <input
                                                 className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10"
                                                 type="text"
                                                 placeholder="e.g. Tokyo"
                                                 value={baseCity}
-                                                onChange={e => setBaseCity(e.target.value)}
+                                                onFocus={() => setActiveSearch({ type: 'base' })}
+                                                onChange={e => {
+                                                    setBaseCity(e.target.value);
+                                                    setBaseCityCoords(null);
+                                                }}
                                             />
+                                            {activeSearch?.type === 'base' && (suggestions.length > 0 || searchLoading) && (
+                                                <div className="absolute top-full left-0 right-0 z-[110] mt-2 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/30 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                                                    {searchLoading && (
+                                                        <div className="p-3 text-xs text-gray-400 flex items-center gap-2">
+                                                            <Loader2 className="animate-spin" size={12} /> Searching...
+                                                        </div>
+                                                    )}
+                                                    {suggestions.map((s, sIdx) => (
+                                                        <button
+                                                            key={sIdx}
+                                                            onClick={() => handleSelectBaseCitySuggestion(s)}
+                                                            className="w-full text-left p-3 hover:bg-[var(--color-primary)]/10 border-b border-white/5 last:border-none transition-colors group"
+                                                        >
+                                                            <div className="text-sm font-bold text-white group-hover:text-[var(--color-primary)]">{s.name}</div>
+                                                            <div className="text-[10px] text-gray-400 truncate">{s.label}</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-1.5 relative">
                                             <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-secondary)]/70 uppercase ml-1">Stay Location 🏨</label>
                                             <input
                                                 className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-secondary)]/50 focus:ring-4 focus:ring-[var(--color-secondary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10"
                                                 type="text"
                                                 placeholder="e.g. Hilton Shinjuku"
                                                 value={accommodation}
-                                                onChange={e => setAccommodation(e.target.value)}
+                                                onFocus={() => setActiveSearch({ type: 'stay' })}
+                                                onChange={e => {
+                                                    setAccommodation(e.target.value);
+                                                    setAccommodationCoords(null);
+                                                }}
                                             />
+                                            {activeSearch?.type === 'stay' && (suggestions.length > 0 || searchLoading) && (
+                                                <div className="absolute top-full left-0 right-0 z-[110] mt-2 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/30 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                                                    {searchLoading && (
+                                                        <div className="p-3 text-xs text-gray-400 flex items-center gap-2">
+                                                            <Loader2 className="animate-spin" size={12} /> Searching...
+                                                        </div>
+                                                    )}
+                                                    {suggestions.map((s, sIdx) => (
+                                                        <button
+                                                            key={sIdx}
+                                                            onClick={() => handleSelectStaySuggestion(s)}
+                                                            className="w-full text-left p-3 hover:bg-[var(--color-primary)]/10 border-b border-white/5 last:border-none transition-colors group"
+                                                        >
+                                                            <div className="text-sm font-bold text-white group-hover:text-[var(--color-primary)]">{s.name}</div>
+                                                            <div className="text-[10px] text-gray-400 truncate">{s.label}</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
@@ -1240,87 +1318,101 @@ export default function Home() {
                                         </button>
                                     </div>
 
-                                    {places.map((place, idx) => (
-                                        <div
-                                            key={idx}
-                                            onClick={() => place.coords && handleSpotlight(place.name, place.coords[0], place.coords[1])}
-                                            className="bg-[var(--color-surface-container-high)] p-5 rounded-3xl border border-[var(--color-outline-variant)]/20 shadow-xl group hover:border-[var(--color-primary)]/30 transition-all cursor-pointer"
-                                        >
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="relative">
-                                                    <input
-                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 text-base font-bold text-[var(--color-on-surface)] placeholder:text-[var(--color-on-surface-variant)]/40 outline-none"
-                                                        placeholder={idx === 0 ? "e.g., TeamLab Borderless" : "e.g., Shibuya Crossing"}
-                                                        value={place.name}
-                                                        onFocus={() => setActiveSearchIdx(idx)}
-                                                        onChange={(e) => {
-                                                            handlePlaceChange(idx, 'name', e.target.value);
-                                                            if (place.coords) handlePlaceChange(idx, 'coords', undefined); // Clear coords if they edit the text
-                                                        }}
-                                                    />
-                                                    {activeSearchIdx === idx && (suggestions.length > 0 || searchLoading) && (
-                                                        <div className="absolute top-full left-0 right-0 z-[100] mt-2 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/30 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
-                                                            {searchLoading && (
-                                                                <div className="p-3 text-xs text-gray-400 flex items-center gap-2">
-                                                                    <Loader2 className="animate-spin" size={12} /> Searching...
-                                                                </div>
-                                                            )}
-                                                            {suggestions.map((s, sIdx) => (
-                                                                <button
-                                                                    key={sIdx}
-                                                                    onClick={() => handleSelectSuggestion(idx, s)}
-                                                                    className="w-full text-left p-3 hover:bg-[var(--color-primary)]/10 border-b border-white/5 last:border-none transition-colors group"
-                                                                >
-                                                                    <div className="text-sm font-bold text-white group-hover:text-[var(--color-primary)]">{s.name}</div>
-                                                                    <div className="text-[10px] text-gray-400 truncate">{s.label}</div>
-                                                                </button>
-                                                            ))}
-                                                        </div>
+                                    <Reorder.Group axis="y" values={places} onReorder={setPlaces} className="space-y-4">
+                                        {places.map((place, idx) => (
+                                            <Reorder.Item
+                                                key={place.id}
+                                                value={place}
+                                                id={place.id}
+                                                className="bg-[var(--color-surface-container-high)] p-5 rounded-3xl border border-[var(--color-outline-variant)]/20 shadow-xl group hover:border-[var(--color-primary)]/30 transition-all cursor-pointer relative"
+                                            >
+                                                {/* Drag handle */}
+                                                <div className="absolute -left-3 top-1/2 -translate-y-1/2 p-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                                                    <Grab size={16} className="text-[var(--color-primary)]/40" />
+                                                </div>
+
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div className="relative">
+                                                        <input
+                                                            className="w-full bg-transparent border-none focus:ring-0 p-0 text-base font-bold text-[var(--color-on-surface)] placeholder:text-[var(--color-on-surface-variant)]/40 outline-none"
+                                                            placeholder={idx === 0 ? "e.g., TeamLab Borderless" : "e.g., Shibuya Crossing"}
+                                                            value={place.name}
+                                                            onFocus={() => setActiveSearch({ type: 'place', index: idx })}
+                                                            onChange={(e) => {
+                                                                handlePlaceChange(idx, 'name', e.target.value);
+                                                                if (place.coords) handlePlaceChange(idx, 'coords', undefined); // Clear coords if they edit the text
+                                                            }}
+                                                        />
+                                                        {activeSearch?.type === 'place' && activeSearch.index === idx && (suggestions.length > 0 || searchLoading) && (
+                                                            <div className="absolute top-full left-0 right-0 z-[100] mt-2 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/30 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                                                                {searchLoading && (
+                                                                    <div className="p-3 text-xs text-gray-400 flex items-center gap-2">
+                                                                        <Loader2 className="animate-spin" size={12} /> Searching...
+                                                                    </div>
+                                                                )}
+                                                                {suggestions.map((s, sIdx) => (
+                                                                    <button
+                                                                        key={sIdx}
+                                                                        onClick={() => handleSelectSuggestion(idx, s)}
+                                                                        className="w-full text-left p-3 hover:bg-[var(--color-primary)]/10 border-b border-white/5 last:border-none transition-colors group"
+                                                                    >
+                                                                        <div className="text-sm font-bold text-white group-hover:text-[var(--color-primary)]">{s.name}</div>
+                                                                        <div className="text-[10px] text-gray-400 truncate">{s.label}</div>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {places.length > 1 && (
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemovePlace(idx);
+                                                            }} 
+                                                            className="text-[var(--color-outline)] hover:text-[var(--color-error)] transition-colors p-1"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                                                        </button>
                                                     )}
                                                 </div>
-                                                {places.length > 2 && (
-                                                    <button onClick={() => handleRemovePlace(idx)} className="text-[var(--color-outline)] hover:text-[var(--color-error)] transition-colors">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center justify-between gap-4 mt-2">
-                                                <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                                                    <label className="text-[9px] font-bold tracking-widest text-white/40 uppercase">Duration</label>
-                                                    <input
-                                                        type="number"
-                                                        className="w-12 bg-transparent border-none text-xs p-0 text-center font-bold text-[var(--color-primary)] focus:ring-0 outline-none"
-                                                        value={place.visit_duration}
-                                                        onChange={(e) => handlePlaceChange(idx, 'visit_duration', parseInt(e.target.value) || 60)}
-                                                    />
-                                                    <span className="text-[9px] text-white/20 font-bold uppercase">min</span>
+                                                <div className="flex items-center justify-between gap-4 mt-2">
+                                                    <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                                                        <label className="text-[9px] font-bold tracking-widest text-white/40 uppercase">Duration</label>
+                                                        <input
+                                                            type="number"
+                                                            className="w-12 bg-transparent border-none text-xs p-0 text-center font-bold text-[var(--color-primary)] focus:ring-0 outline-none"
+                                                            value={place.visit_duration}
+                                                            onChange={(e) => handlePlaceChange(idx, 'visit_duration', parseInt(e.target.value) || 60)}
+                                                        />
+                                                        <span className="text-[9px] text-white/20 font-bold uppercase">min</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            id={`res-${idx}`}
+                                                            type="checkbox"
+                                                            checked={place.is_reservation}
+                                                            onChange={(e) => handlePlaceChange(idx, 'is_reservation', e.target.checked)}
+                                                            className="w-4 h-4 rounded border-white/10 bg-white/5 text-[var(--color-primary)] focus:ring-[var(--color-primary)]/20 cursor-pointer transition-all"
+                                                        />
+                                                        <label htmlFor={`res-${idx}`} className="text-[10px] font-bold uppercase tracking-wider text-white/60 cursor-pointer hover:text-white transition-colors">Reservation</label>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        id={`res-${idx}`}
-                                                        type="checkbox"
-                                                        checked={place.is_reservation}
-                                                        onChange={(e) => handlePlaceChange(idx, 'is_reservation', e.target.checked)}
-                                                        className="w-4 h-4 rounded border-white/10 bg-white/5 text-[var(--color-primary)] focus:ring-[var(--color-primary)]/20 cursor-pointer transition-all"
-                                                    />
-                                                    <label htmlFor={`res-${idx}`} className="text-[10px] font-bold uppercase tracking-wider text-white/60 cursor-pointer hover:text-white transition-colors">Reservation</label>
-                                                </div>
-                                            </div>
 
-                                            {place.is_reservation && (
-                                                <div className="grid grid-cols-2 gap-4 pt-3 mt-2 border-t border-[var(--color-outline-variant)]/10 animate-in fade-in slide-in-from-top-1">
-                                                    <div className="space-y-1">
-                                                        <label className="text-[9px] font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase">Date</label>
-                                                        <input className="w-full bg-transparent border-none text-xs p-0 text-[var(--color-on-surface)] focus:ring-0 outline-none" type="date" value={place.reservation_date} onChange={(e) => handlePlaceChange(idx, 'reservation_date', e.target.value)} />
+                                                {place.is_reservation && (
+                                                    <div className="grid grid-cols-2 gap-4 pt-3 mt-2 border-t border-[var(--color-outline-variant)]/10 animate-in fade-in slide-in-from-top-1">
+                                                        <div className="space-y-1">
+                                                            <label className="text-[9px] font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase">Date</label>
+                                                            <input className="w-full bg-transparent border-none text-xs p-0 text-[var(--color-on-surface)] focus:ring-0 outline-none" type="date" value={place.reservation_date} onChange={(e) => handlePlaceChange(idx, 'reservation_date', e.target.value)} />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[9px] font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase">Time</label>
+                                                            <input className="w-full bg-transparent border-none text-xs p-0 text-[var(--color-on-surface)] focus:ring-0 outline-none" type="time" value={place.reservation_clock} onChange={(e) => handlePlaceChange(idx, 'reservation_clock', e.target.value)} />
+                                                        </div>
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[9px] font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase">Time</label>
-                                                        <input className="w-full bg-transparent border-none text-xs p-0 text-[var(--color-on-surface)] focus:ring-0 outline-none" type="time" value={place.reservation_clock} onChange={(e) => handlePlaceChange(idx, 'reservation_clock', e.target.value)} />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                                )}
+                                            </Reorder.Item>
+                                        ))}
+                                    </Reorder.Group>
                                 </div>
 
                                 <div className="space-y-4">
@@ -1330,11 +1422,10 @@ export default function Home() {
                                             Discover Local Gems
                                         </label>
                                         <button
-                                            onClick={handleDiscover}
-                                            disabled={isRecommending}
+                                            onClick={handleInspireMe}
                                             className="text-[var(--color-secondary)] hover:text-white text-[10px] font-bold transition-all flex items-center gap-1 bg-[var(--color-secondary)]/10 px-2 py-1 rounded-md"
                                         >
-                                            {isRecommending ? <Loader2 size={10} className="animate-spin" /> : <Sparkle size={10} />}
+                                            <Sparkle size={10} />
                                             Inspire Me
                                         </button>
                                     </div>

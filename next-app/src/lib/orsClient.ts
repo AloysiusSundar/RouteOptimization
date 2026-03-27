@@ -8,12 +8,16 @@ function getApiKey() {
   return key;
 }
 
-export async function getCoordinates(placeName: string, focus?: [number, number]): Promise<[number, number]> {
+export async function getCoordinates(placeName: string, focus?: [number, number], boundaryRadiusKm?: number): Promise<[number, number]> {
   const apiKey = getApiKey();
   let url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(placeName)}&size=1`;
   
   if (focus) {
     url += `&focus.point.lon=${focus[1]}&focus.point.lat=${focus[0]}`;
+  }
+  
+  if (boundaryRadiusKm && focus) {
+    url += `&boundary.circle.lat=${focus[0]}&boundary.circle.lon=${focus[1]}&boundary.circle.radius=${boundaryRadiusKm}`;
   }
   
   const res = await fetch(url, { cache: 'force-cache' });
@@ -62,13 +66,16 @@ export async function getDurationsMatrix(coords: [number, number][], profile: st
   return durationsMinutes;
 }
 
-export async function getAutocompleteSuggestions(text: string, focus?: [number, number]): Promise<{name: string, label: string, coords: [number, number]}[]> {
+export async function getAutocompleteSuggestions(text: string, focus?: [number, number], boundaryRadiusKm?: number): Promise<{name: string, label: string, coords: [number, number]}[]> {
   const apiKey = getApiKey();
   if (!text || text.length < 3) return [];
 
   let url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${apiKey}&text=${encodeURIComponent(text)}&size=5`;
   if (focus) {
     url += `&focus.point.lat=${focus[0]}&focus.point.lon=${focus[1]}`;
+    if (boundaryRadiusKm) {
+        url += `&boundary.circle.lat=${focus[0]}&boundary.circle.lon=${focus[1]}&boundary.circle.radius=${boundaryRadiusKm}`;
+    }
   }
 
   try {

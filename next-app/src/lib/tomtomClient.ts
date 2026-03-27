@@ -84,7 +84,7 @@ export async function getTomTomLegDetails(origin: [number, number], destination:
   const mode = mapProfileToTomTom(profile);
   
   // traffic=all + departAt=now triggers the return of live vs historical
-  const url = `https://api.tomtom.com/routing/1/calculateRoute/${origin[0]},${origin[1]}:${destination[0]},${destination[1]}/json?key=${apiKey}&traffic=true&travelMode=${mode}&departAt=now`;
+  const url = `https://api.tomtom.com/routing/1/calculateRoute/${origin[0]},${origin[1]}:${destination[0]},${destination[1]}/json?key=${apiKey}&traffic=true&travelMode=${mode}&departAt=now&computeTravelTimeFor=all`;
 
   try {
     const res = await fetch(url, { next: { revalidate: 300 } });

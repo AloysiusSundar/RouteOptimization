@@ -43,9 +43,18 @@ interface MapProps {
     onMarkerClick?: (stop: ScheduleStop) => void;
     mapMode?: 'drag' | 'pin';
     onMapClick?: (lat: number, lng: number) => void;
+    mapStyle?: 'dark' | 'light' | 'voyager';
 }
 
-export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerClick, mapMode = 'drag', onMapClick }: MapProps) {
+export default function MapComponent({ 
+  coords, 
+  routeGeoJson, 
+  schedule, 
+  onMarkerClick, 
+  mapMode = 'drag', 
+  onMapClick,
+  mapStyle = 'dark' 
+}: MapProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const defaultCenter: [number, number] = [40.7128, -74.0060]; // NYC default
   
@@ -148,7 +157,13 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
         <ChangeView center={center} zoom={zoom} />
         <MapEvents mode={mapMode} onMapClick={onMapClick} />
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url={
+            mapStyle === 'light' 
+              ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              : mapStyle === 'voyager'
+                ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          }
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
         {useMemo(() => {
