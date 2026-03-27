@@ -43,7 +43,7 @@ interface MapProps {
     onMarkerClick?: (stop: ScheduleStop) => void;
     mapMode?: 'drag' | 'pin';
     onMapClick?: (lat: number, lng: number) => void;
-    mapStyle?: 'dark' | 'light' | 'voyager';
+    mapStyle?: 'dark' | 'light' | 'voyager' | 'satellite';
     accommodationCoords?: [number, number] | null;
     accommodationName?: string;
 }
@@ -170,9 +170,15 @@ export default function MapComponent({
               ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
               : mapStyle === 'voyager'
                 ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                : mapStyle === 'satellite'
+                  ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                  : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           }
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          attribution={
+            mapStyle === 'satellite'
+              ? '&copy; <a href="https://www.esri.com/">Esri</a>'
+              : '&copy; <a href="https://carto.com/">CARTO</a>'
+          }
         />
         {useMemo(() => {
           let realStopIndex = 0;

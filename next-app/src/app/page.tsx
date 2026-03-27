@@ -94,7 +94,7 @@ export default function Home() {
     const [saveName, setSaveName] = useState('');
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
     const [mapMode, setMapMode] = useState<'drag' | 'pin'>('drag');
-    const [mapStyle, setMapStyle] = useState<'dark' | 'light' | 'voyager'>('dark');
+    const [mapStyle, setMapStyle] = useState<'dark' | 'light' | 'voyager' | 'satellite'>('dark');
     const [weather, setWeather] = useState<WeatherData | null>(null);
     const [isWeatherLoading, setIsWeatherLoading] = useState(false);
 
@@ -1106,6 +1106,13 @@ export default function Home() {
                                 title="Voyager (Colorful)"
                             >
                                 <Layers size={14} />
+                            </button>
+                            <button
+                                onClick={() => setMapStyle('satellite')}
+                                className={`p-1.5 rounded-lg transition-all ${mapStyle === 'satellite' ? 'bg-[var(--color-primary)] text-black shadow-[0_0_15px_rgba(75,142,255,0.4)]' : 'text-white/40 hover:bg-white/5'}`}
+                                title="Satellite (Esri)"
+                            >
+                                <Globe size={14} />
                             </button>
                         </div>
 
