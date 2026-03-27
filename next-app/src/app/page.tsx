@@ -7,7 +7,7 @@ import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } f
 import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
 import { getTomTomDurationsMatrix, getTomTomLegDetails } from '@/lib/tomtomClient';
-import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab, Moon, Layers, CloudFog, CloudDrizzle, CloudRain, CloudLightning, CloudSnow, Wind, Cloud, Sun } from 'lucide-react';
+import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab, Moon, Layers, CloudFog, CloudDrizzle, CloudRain, CloudLightning, CloudSnow, Wind, Cloud, Sun, Home as HomeIcon } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
 import { clusterPlaces } from '@/lib/Clusterer';
 import { exportToCsv, exportToIcal } from '@/lib/ExportUtils';
@@ -1118,7 +1118,7 @@ export default function Home() {
 
                     <button
                         onClick={() => setIsSaveModalOpen(true)}
-                        className="flex items-center gap-2 bg-[var(--color-secondary)] text-black px-6 py-3 rounded-xl text-[12px] font-extrabold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--color-secondary)]/20"
+                        className="flex items-center gap-2 bg-[var(--color-secondary)] text-black px-6 py-3 rounded-xl text-[12px] font-extrabold uppercase tracking-widest border border-transparent hover:bg-black hover:text-[var(--color-secondary)] hover:border-[var(--color-secondary)]/30 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--color-secondary)]/20"
                     >
                         <Save size={16} /> Save
                     </button>
@@ -1188,9 +1188,9 @@ export default function Home() {
 
                 {/* Configuration Panel (V7.0 Zen Mode) */}
                 <div className={`absolute left-10 top-24 z-[100] flex flex-col gap-4 transition-all duration-500 ease-in-out ${isConfigExpanded ? 'bottom-10 w-[440px]' : 'w-48 h-14'}`}>
-                    <section className={`bg-[var(--color-surface-container-low)]/90 backdrop-blur-md rounded-[2.5rem] shadow-2xl border border-white/5 transition-all duration-500 overflow-hidden ${isConfigExpanded ? 'p-7 flex flex-col gap-5 h-full overflow-y-auto scrollbar-none' : 'p-0 h-full flex items-center'}`}>
+                    <section className={`bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-[var(--color-outline-variant)]/10 transition-all duration-500 overflow-hidden ${isConfigExpanded ? 'flex flex-col h-full' : 'p-0 h-full flex items-center'}`}>
                         {isConfigExpanded ? (
-                            <>
+                            <div className="flex-1 overflow-y-auto p-7 flex flex-col gap-5 scrollbar-bounded">
                                 <div className="space-y-1">
                                     <div
                                         className="flex items-center justify-between"
@@ -1293,7 +1293,7 @@ export default function Home() {
                                             )}
                                         </div>
                                         <div className="space-y-1.5 relative">
-                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-secondary)]/70 uppercase ml-1">Stay Location 🏨</label>
+                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-secondary)]/70 uppercase ml-1">Stay Location</label>
                                             <input
                                                 className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-secondary)]/50 focus:ring-4 focus:ring-[var(--color-secondary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10"
                                                 type="text"
@@ -1610,7 +1610,7 @@ export default function Home() {
                                 >
                                     {isPlanning ? <><Loader2 className="animate-spin" size={18} /> Routing...</> : 'Generate Optimized Itinerary'}
                                 </button>
-                            </>
+                            </div>
                         ) : (
                             <button
                                 onClick={() => setIsConfigExpanded(true)}
@@ -1629,7 +1629,7 @@ export default function Home() {
                 {/* Right Side Context Cards (Schedule) (V7.0 Zen Mode) */}
                 {schedule && schedule.length > 0 && (
                     <div className={`absolute right-10 top-24 z-[100] flex flex-col gap-4 transition-all duration-500 ease-in-out ${isPlanExpanded ? 'bottom-10 w-96' : 'w-48 h-14'}`}>
-                        <div className={`bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-3xl border border-[var(--color-outline-variant)]/10 shadow-2xl transition-all duration-500 overflow-hidden ${isPlanExpanded ? 'p-6 flex-1 overflow-y-auto scrollbar-thin' : 'p-0 h-full flex items-center'}`}>
+                        <div className={`bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-3xl border border-[var(--color-outline-variant)]/10 shadow-2xl transition-all duration-500 overflow-hidden ${isPlanExpanded ? 'p-6 flex-1 overflow-y-auto scrollbar-bounded' : 'p-0 h-full flex items-center'}`}>
                             {isPlanExpanded ? (
                                 <>
                                     <h2 className="text-xl font-bold text-[var(--color-on-surface)] mb-6 flex items-center justify-between gap-2">
@@ -1694,7 +1694,7 @@ export default function Home() {
                                                                         <div className="flex flex-col gap-0.5">
                                                                             <div className="flex items-center gap-2">
                                                                                 <h4 className="text-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-primary-fixed-dim)] transition-colors line-clamp-1">
-                                                                                    {isHotel ? '🏠' : `${realStopCounter}.`} {stop.place}
+                                                                                    {isHotel ? <HomeIcon size={14} className="text-white group-hover:text-[var(--color-primary)] transition-colors translate-y-[-1px]" /> : `${realStopCounter}.`} {stop.place}
                                                                                 </h4>
                                                                                 {stop.isReservation && (
                                                                                     <div className="px-1.5 py-0.5 rounded-md bg-[var(--color-secondary)]/10 border border-[var(--color-secondary)]/20 text-[var(--color-secondary)]" title="Fixed Reservation">

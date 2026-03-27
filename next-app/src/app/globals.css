@@ -72,6 +72,11 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .scrollbar-bounded::-webkit-scrollbar-track {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
 }
 
 /* 

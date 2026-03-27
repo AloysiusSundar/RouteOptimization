@@ -119,14 +119,14 @@ export default function MapComponent({
           box-shadow: 0 0 15px ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.5)' : 'var(--color-primary)'};
         }
         .hotel-icon {
-          background: transparent;
-          border: none;
+          background: ${mapStyle === 'satellite' ? '#10b981' : 'var(--color-secondary)'};
+          color: black;
+          border: 2px solid white;
+          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: 900;
-          font-size: 24px;
-          filter: drop-shadow(0 0 4px white);
+          box-shadow: 0 0 15px ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.5)' : 'var(--color-secondary)'};
         }
         .leaflet-tooltip-tripit {
           background: ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.9)' : 'var(--color-surface-container-high)'} !important;
@@ -213,8 +213,8 @@ export default function MapComponent({
                 }}
               >
                 <Popup>
-                  <div className="text-gray-900 font-semibold p-1">
-                    {isHotel ? '🏠' : `${realStopIndex}.`} {stop?.place || 'Stop'}
+                  <div className="text-gray-900 font-semibold p-1 flex items-center gap-2">
+                    {isHotel ? <span className="text-[var(--color-secondary)]">Stay</span> : `${realStopIndex}.`} {stop?.place || 'Stop'}
                   </div>
                 </Popup>
                 {stop && (
@@ -249,14 +249,14 @@ export default function MapComponent({
               position={accommodationCoords} 
               icon={L.divIcon({
                 className: 'hotel-icon',
-                html: `<span>🏨</span>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
+                html: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
               })}
             >
               <Popup>
                 <div className="text-gray-900 font-semibold p-1">
-                  🏠 Stay: {accommodationName || 'Stay Location'}
+                  Stay: {accommodationName || 'Stay Location'}
                   {scheduleStop && <div className="text-[10px] text-gray-500 font-normal mt-1">Active for this trip</div>}
                 </div>
               </Popup>
