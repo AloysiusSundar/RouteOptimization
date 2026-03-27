@@ -48,6 +48,14 @@
   --color-surface-container: #201f1f;
   --color-inverse-surface: #e5e2e1;
   --color-on-tertiary-fixed-variant: #7c2e00;
+  
+  /* Zen-Hackery Landing Page Tokens */
+  --color-zen-bg: #050505;
+  --color-zen-neon: #00ff41;
+  --color-zen-light: #ebffe2;
+  --color-zen-dark: #3b4b37;
+  --color-zen-surface: #131313;
+  --color-zen-surface-low: #0e0e0e;
 
   --font-headline: var(--font-space-mono), monospace;
   --font-body: var(--font-geist-sans), sans-serif;
@@ -116,6 +124,28 @@ body {
   font-family: var(--font-body);
 }
 
-::-webkit-scrollbar { width: 6px; }
+
+  ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-outline-variant); border-radius: 10px; }
+
+.theme-zen {
+  --font-body: var(--font-inter), sans-serif;
+  --font-headline: var(--font-inter), sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+  --font-label: var(--font-jetbrains-mono), monospace;
+}
+
+.theme-zen .ghost-border {
+  border: 1px solid rgba(59, 75, 55, 0.15);
+}
+
+.theme-zen .terminal-cursor::after {
+  content: '_';
+  animation: zen-blink 1s step-end infinite;
+}
+
+@keyframes zen-blink {
+  from, to { opacity: 1; }
+  50% { opacity: 0; }
+}

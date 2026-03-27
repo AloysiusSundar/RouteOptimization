@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Space_Mono, Libre_Baskerville } from "next/font/google";
+import { Geist, Geist_Mono, Space_Mono, Libre_Baskerville, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,6 +24,16 @@ const libreBaskerville = Libre_Baskerville({
   subsets: ["latin"],
 });
 
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "Yathir.ai - AI Route Optimization",
   description: "Next-generation itinerary planning with persistent caching and custom map controls.",
@@ -37,7 +47,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${libreBaskerville.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${spaceMono.variable} ${libreBaskerville.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>{children}</body>
