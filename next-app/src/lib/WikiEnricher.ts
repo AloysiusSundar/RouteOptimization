@@ -49,7 +49,7 @@ async function wikiApiCall(params: Record<string, string>): Promise<WikiData> {
   const baseUrl = 'https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages|extracts&exintro&explaintext&exchars=300&piprop=thumbnail&pithumbsize=1000';
   
   const queryParams = new URLSearchParams(params).toString();
-  const res = await fetch(`${baseUrl}&${queryParams}`);
+  const res = await fetch(`${baseUrl}&${queryParams}`, { cache: 'force-cache' });
   if (!res.ok) return {};
   
   const data = await res.json();

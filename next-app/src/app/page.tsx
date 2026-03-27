@@ -57,6 +57,7 @@ export default function Home() {
     const [transportMode, setTransportMode] = useState<string>('driving-car');
     const [isConfigExpanded, setIsConfigExpanded] = useState(true);
     const [isPlanExpanded, setIsPlanExpanded] = useState(true);
+    const [isSpotlightLoading, setIsSpotlightLoading] = useState(false);
 
     // Base City Geocoding (Debounced)
     useEffect(() => {
@@ -432,16 +433,25 @@ export default function Home() {
             setSelectedEnrichment(existing);
             return;
         }
+
         // 2. Otherwise, fetch on-demand for manual stops
-        const wiki = await fetchWikiData(name, lat, lon);
-        setSelectedEnrichment({
-            name,
-            lat: lat || 0,
-            lon: lon || 0,
-            tags: {},
-            ...wiki,
-            id: Math.random() // Temp ID for the spotlight view
-        } as POI);
+        setIsSpotlightLoading(true);
+        // Instant visual feedback: clear old card or show skeleton immediately
+        setSelectedEnrichment(null); 
+        
+        try {
+            const wiki = await fetchWikiData(name, lat, lon);
+            setSelectedEnrichment({
+                name,
+                lat: lat || 0,
+                lon: lon || 0,
+                tags: {},
+                ...wiki,
+                id: Math.random() // Temp ID for the spotlight view
+            } as POI);
+        } finally {
+            setIsSpotlightLoading(false);
+        }
     };
 
     const analytics = useMemo(() => {
@@ -567,7 +577,27 @@ export default function Home() {
                         <span className="font-medium text-sm">Itinerary</span>
                     </a>
 
-                    {selectedEnrichment && (
+                    {isSpotlightLoading && (
+                        <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                             <div className="px-6 mb-4 flex items-center justify-between">
+                                <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
+                            </div>
+                            <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3 animate-pulse">
+                                <div className="h-48 w-full bg-white/5" />
+                                <div className="p-6 relative z-10 -mt-10">
+                                    <div className="h-6 w-3/4 bg-white/10 rounded-lg mb-4" />
+                                    <div className="space-y-2 mb-6">
+                                        <div className="h-3 w-full bg-white/5 rounded" />
+                                        <div className="h-3 w-full bg-white/5 rounded" />
+                                        <div className="h-3 w-2/3 bg-white/5 rounded" />
+                                    </div>
+                                    <div className="h-10 w-full bg-[var(--color-primary)]/10 rounded-2xl" />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {!isSpotlightLoading && selectedEnrichment && (
                         <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
                             <div className="px-6 mb-4 flex items-center justify-between">
                                 <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
@@ -624,6 +654,7 @@ export default function Home() {
                             </div>
                         </div>
                     )}
+
                 </nav>
 
                 {/* Trip Analytics (V6.7) */}
@@ -1234,7 +1265,7 @@ export default function Home() {
                                                             </div>
 
                                                             {/* Travel Bridge (Inline Traffic Context) */}
-                                                            {travelInfo && Math.round(travelInfo.mins) > 0 && (
+                                                            {travelInfo && Math.round(travelInfo.mins || 0) > 0 && (
                                                                 <div className="relative h-10 -ml-1 flex items-center">
                                                                     <div className="absolute left-[-1.5px] top-0 bottom-0 w-[3px] border-l-2 border-dashed border-white/10 ml-[-2px]"></div>
                                                                     <div className="ml-6 flex items-center gap-3">

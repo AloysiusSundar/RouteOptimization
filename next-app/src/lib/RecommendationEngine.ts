@@ -1,4 +1,5 @@
 'use server';
+import { unstable_cache } from 'next/cache';
 
 /**
  * RecommendationEngine.ts (V3.1 - Intent Driven + AI Ranking)
@@ -103,7 +104,8 @@ export async function fetchNearbyPOIs(
     const response = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       body: query,
-      signal: AbortSignal.timeout(185000)
+      signal: AbortSignal.timeout(185000),
+      cache: 'force-cache' // Overpass results are static enough to cache
     });
 
     if (!response.ok) {
@@ -156,55 +158,47 @@ export async function rankPOIs(pois: POI[], interest: string): Promise<POI[]> {
     return rankPOIsHeuristic(pois, interest);
   }
 
+  // Define the cached fetching logic
+  const getEmbeddings = unstable_cache(
+    async (texts: string[], inputType: "search_query" | "search_document") => {
+      const modelId = "embed-english-v3.0";
+      const headers = {
+        "Authorization": `Bearer ${cohereKey}`,
+        "Content-Type": "application/json",
+        "Request-Source": "node-sdk"
+      };
+
+      const res = await fetch("https://api.cohere.ai/v1/embed", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          texts,
+          model: modelId,
+          input_type: inputType,
+          embedding_types: ["float"]
+        })
+      });
+
+      if (!res.ok) throw new Error(`Cohere API Fail: ${res.status}`);
+      const data = await res.json();
+      return data.embeddings.float;
+    },
+    ['cohere-embeddings'],
+    { revalidate: 86400 * 30 } // Cache for 30 days
+  );
+
   try {
     const query = interest || 'Top attractions';
     const documents = pois.map(poi => 
       `${poi.name}. ${poi.tags?.tourism || ''} ${poi.tags?.historic || ''} ${poi.tags?.description || ''}`.trim()
     );
 
-    const modelId = "embed-english-v3.0";
+    // Use the cached embeddings
+    const queryEmbeds = await getEmbeddings([query], "search_query");
+    const docEmbeds = await getEmbeddings(documents, "search_document");
     
-    // Header for all Cohere requests
-    const headers = {
-      "Authorization": `Bearer ${cohereKey}`,
-      "Content-Type": "application/json",
-      "Request-Source": "node-sdk"
-    };
-
-    // Step 1: Get Query Embedding
-    const queryRes = await fetch("https://api.cohere.ai/v1/embed", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        texts: [query],
-        model: modelId,
-        input_type: "search_query",
-        embedding_types: ["float"]
-      })
-    });
-
-    // Step 2: Get Document Embeddings (in one batch)
-    const docRes = await fetch("https://api.cohere.ai/v1/embed", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        texts: documents,
-        model: modelId,
-        input_type: "search_document",
-        embedding_types: ["float"]
-      })
-    });
-
-    if (!queryRes.ok || !docRes.ok) {
-        console.warn(`[Engine V4.0] Cohere API Fail. Using HeuristicFallback.`);
-        return rankPOIsHeuristic(pois, interest);
-    }
-
-    const { embeddings: queryEmbeds } = await queryRes.json();
-    const { embeddings: docEmbeds } = await docRes.json();
-    
-    const interestVector = queryEmbeds.float[0];
-    const poiVectors = docEmbeds.float;
+    const interestVector = queryEmbeds[0];
+    const poiVectors = docEmbeds;
 
     console.log(`[Engine V4.0] Semantic search complete. Computing similarities...`);
 

@@ -16,7 +16,7 @@ export async function getCoordinates(placeName: string, focus?: [number, number]
     url += `&focus.point.lon=${focus[1]}&focus.point.lat=${focus[0]}`;
   }
   
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'force-cache' });
   if (!res.ok) throw new Error(`Failed to geocode ${placeName}. Status: ${res.status}`);
   const data = await res.json();
   if (!data?.features || data.features.length === 0) throw new Error(`Place not found: ${placeName}`);
@@ -44,7 +44,8 @@ export async function getDurationsMatrix(coords: [number, number][], profile: st
     body: JSON.stringify({
       locations: locations,
       metrics: ['duration']
-    })
+    }),
+    next: { revalidate: 86400 } // Cache matrix for 24 hours
   });
 
   if (!res.ok) {
@@ -71,7 +72,7 @@ export async function getAutocompleteSuggestions(text: string, focus?: [number, 
   }
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'force-cache' });
     if (!res.ok) return [];
     const data = await res.json();
     return data.features.map((f: any) => ({
@@ -123,7 +124,8 @@ export async function getRoutePolyline(coords: [number, number][], profile: stri
         'Content-Type': 'application/json',
         'Authorization': apiKey as string
       },
-      body: JSON.stringify({ coordinates: locations })
+      body: JSON.stringify({ coordinates: locations }),
+      next: { revalidate: 86400 } // Cache polylines for 24 hours
     });
 
     if (!res.ok) {

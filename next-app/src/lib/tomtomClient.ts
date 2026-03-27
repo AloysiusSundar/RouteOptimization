@@ -47,7 +47,8 @@ export async function getTomTomDurationsMatrix(coords: [number, number][], profi
       body: JSON.stringify({
         origins: points,
         destinations: points
-      })
+      }),
+      next: { revalidate: 300 } // Balance live traffic: 5 minute cache
     });
 
     if (!res.ok) {
@@ -86,7 +87,7 @@ export async function getTomTomLegDetails(origin: [number, number], destination:
   const url = `https://api.tomtom.com/routing/1/calculateRoute/${origin[0]},${origin[1]}:${destination[0]},${destination[1]}/json?key=${apiKey}&traffic=true&travelMode=${mode}&departAt=now`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { next: { revalidate: 300 } });
     if (!res.ok) return null;
     const data = await res.json();
     const route = data.routes?.[0]?.summary;

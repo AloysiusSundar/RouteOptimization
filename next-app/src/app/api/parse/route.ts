@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 
 export async function POST(req: Request) {
   try {
@@ -40,41 +41,45 @@ export async function POST(req: Request) {
       }
     `;
 
-    async function tryModel(modelName: string) {
-      console.log(`🤖 Attempting extraction with ${modelName}...`);
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: `${systemPrompt}\n\nUser text: ${prompt}` }]
-          }],
-          generationConfig: {
-            response_mime_type: "application/json"
-          }
-        })
-      });
-      return res;
-    }
+    // Cached Wrapper for Gemini
+    const getCachedParsedData = unstable_cache(
+      async (userPrompt: string) => {
+        async function tryModel(modelName: string) {
+          console.log(`🤖 [Cache Miss] Calling Gemini ${modelName}...`);
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{ text: `${systemPrompt}\n\nUser text: ${userPrompt}` }]
+              }],
+              generationConfig: {
+                response_mime_type: "application/json"
+              }
+            })
+          });
+          return res;
+        }
 
-    let response = await tryModel('gemini-2.5-flash');
-    
-    // Fallback logic for rate limits (429) or other transient errors
-    if (response.status === 429 || !response.ok) {
-       console.warn(`⚠️ Primary model failed (${response.status}). Falling back to modern flash lite...`);
-       response = await tryModel('gemini-3.1-flash-lite-preview');
-    }
+        let response = await tryModel('gemini-2.5-flash');
+        
+        if (response.status === 429 || !response.ok) {
+           response = await tryModel('gemini-3.1-flash-lite-preview');
+        }
 
-    const data = await response.json();
-    
-    if (data.error) {
-      throw new Error(data.error.message);
-    }
+        if (!response.ok) throw new Error(`Gemini API Failed: ${response.status}`);
 
-    const resultText = data.candidates[0].content.parts[0].text;
-    const resultJson = JSON.parse(resultText.replace(/```json/g, '').replace(/```/g, '').trim());
+        const data = await response.json();
+        const resultText = data.candidates[0].content.parts[0].text;
+        return JSON.parse(resultText.replace(/```json/g, '').replace(/```/g, '').trim());
+      },
+      ['gemini-itinerary-parse'],
+      { revalidate: 86400 * 30 } // 30 day cache for prompts
+    );
 
+    const resultJson = await getCachedParsedData(prompt);
     return NextResponse.json(resultJson);
+    
   } catch (err: any) {
     console.error('AI Parsing failed:', err);
     return NextResponse.json({ error: err.message || 'AI extraction failed. Try a different prompt.' }, { status: 500 });
