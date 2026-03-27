@@ -1,5 +1,5 @@
 'use client';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { ScheduleStop } from '@/lib/ScheduleGenerator';
@@ -16,23 +16,36 @@ const customIcon = L.icon({
 L.Marker.prototype.options.icon = customIcon;
 
 function ChangeView({ center, zoom }: { center: [number, number], zoom: number }) {
-  const map = useMap();
-  useEffect(() => {
-    // Only set view if it's the first render or if the data actually changed
-    // We use JSON.stringify to compare the array values rather than references
-    map.setView(center, zoom);
-  }, [JSON.stringify(center), zoom, map]);
-  return null;
+    const map = useMap();
+    useEffect(() => {
+        // Only set view if it's the first render or if the data actually changed
+        // We use JSON.stringify to compare the array values rather than references
+        map.setView(center, zoom);
+    }, [JSON.stringify(center), zoom, map]);
+    return null;
+}
+
+function MapEvents({ mode, onMapClick }: { mode: 'drag' | 'pin', onMapClick?: (lat: number, lng: number) => void }) {
+    useMapEvents({
+        click(e) {
+            if (mode === 'pin' && onMapClick) {
+                onMapClick(e.latlng.lat, e.latlng.lng);
+            }
+        },
+    });
+    return null;
 }
 
 interface MapProps {
-  coords: [number, number][];
-  routeGeoJson?: any; 
-  schedule?: ScheduleStop[] | null;
-  onMarkerClick?: (stop: ScheduleStop) => void;
+    coords: [number, number][];
+    routeGeoJson?: any; 
+    schedule?: ScheduleStop[] | null;
+    onMarkerClick?: (stop: ScheduleStop) => void;
+    mapMode?: 'drag' | 'pin';
+    onMapClick?: (lat: number, lng: number) => void;
 }
 
-export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerClick }: MapProps) {
+export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerClick, mapMode = 'drag', onMapClick }: MapProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const defaultCenter: [number, number] = [40.7128, -74.0060]; // NYC default
   
@@ -74,7 +87,7 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
   }, [routeGeoJson, schedule]);
 
   return (
-    <div className="h-full w-full rounded-2xl overflow-hidden shadow-2xl z-0 relative">
+    <div className={`h-full w-full rounded-2xl overflow-hidden shadow-2xl z-0 relative ${mapMode === 'pin' ? 'cursor-crosshair' : ''}`}>
       <style dangerouslySetInnerHTML={{ __html: `
         .number-icon {
           background: var(--color-primary);
@@ -117,14 +130,23 @@ export default function MapComponent({ coords, routeGeoJson, schedule, onMarkerC
         .route-flow {
           animation: routeFlow 1s linear infinite;
         }
+        .cursor-crosshair .leaflet-container {
+          cursor: crosshair !important;
+        }
+        .leaflet-container {
+          background: #000 !important;
+        }
       `}} />
       <MapContainer 
         center={center} 
         zoom={zoom} 
+        minZoom={3}
+        maxBounds={[[-85, -180], [85, 180]]}
         style={{ height: '100%', width: '100%', zIndex: 0 }}
         zoomControl={false}
       >
         <ChangeView center={center} zoom={zoom} />
+        <MapEvents mode={mapMode} onMapClick={onMapClick} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'

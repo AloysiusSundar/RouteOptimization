@@ -6,7 +6,7 @@ import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } f
 import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
 import { getTomTomDurationsMatrix, getTomTomLegDetails } from '@/lib/tomtomClient';
-import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2 } from 'lucide-react';
+import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
 import { clusterPlaces } from '@/lib/Clusterer';
 import { exportToCsv, exportToIcal } from '@/lib/ExportUtils';
@@ -19,6 +19,18 @@ interface UIPlace extends SchedulePlace {
     reservation_date: string; // YYYY-MM-DD
     reservation_clock: string; // HH:MM
     coords?: [number, number]; // Optimized: store coords from autocomplete
+}
+
+interface SavedTrip {
+    id: string;
+    name: string;
+    timestamp: number;
+    baseCity: string;
+    accommodation: string;
+    startDate: string;
+    tripLength: number;
+    places: UIPlace[];
+    transportMode: string;
 }
 
 export default function Home() {
@@ -53,11 +65,56 @@ export default function Home() {
     const [recommendations, setRecommendations] = useState<POI[]>([]);
     const [selectedEnrichment, setSelectedEnrichment] = useState<POI | null>(null);
     const [isRecommending, setIsRecommending] = useState(false);
-    const [interest, setInterest] = useState('Top tourist attractions, museums, and historical landmarks');
+    const [interest, setInterest] = useState('');
     const [transportMode, setTransportMode] = useState<string>('driving-car');
     const [isConfigExpanded, setIsConfigExpanded] = useState(true);
     const [isPlanExpanded, setIsPlanExpanded] = useState(true);
     const [isSpotlightLoading, setIsSpotlightLoading] = useState(false);
+
+    // V8.0: Persistence Layer (localStorage)
+    const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
+    const [isMyTripsOpen, setIsMyTripsOpen] = useState(false);
+    const [saveName, setSaveName] = useState('');
+    const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+    const [mapMode, setMapMode] = useState<'drag' | 'pin'>('drag');
+
+    // Load Saved Trips on Mount
+    useEffect(() => {
+        const stored = localStorage.getItem('tripit_saved_trips');
+        if (stored) {
+            try {
+                setSavedTrips(JSON.parse(stored));
+            } catch (e) {
+                console.error('Failed to parse saved trips:', e);
+            }
+        }
+    }, []);
+
+    // Save Trips to LocalStorage when they change
+    useEffect(() => {
+        localStorage.setItem('tripit_saved_trips', JSON.stringify(savedTrips));
+    }, [savedTrips]);
+
+    const handleMapClick = (lat: number, lng: number) => {
+        const newPlace: UIPlace = {
+            name: `Dropped Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+            visit_duration: 60,
+            is_reservation: false,
+            reservation_date: startDate,
+            reservation_clock: '12:00',
+            coords: [lat, lng]
+        };
+
+        // Add to the first empty slot or append
+        const emptyIdx = places.findIndex(p => !p.name);
+        if (emptyIdx !== -1) {
+            const nextPlaces = [...places];
+            nextPlaces[emptyIdx] = newPlace;
+            setPlaces(nextPlaces);
+        } else {
+            setPlaces([...places, newPlace]);
+        }
+    };
 
     // Base City Geocoding (Debounced)
     useEffect(() => {
@@ -437,8 +494,8 @@ export default function Home() {
         // 2. Otherwise, fetch on-demand for manual stops
         setIsSpotlightLoading(true);
         // Instant visual feedback: clear old card or show skeleton immediately
-        setSelectedEnrichment(null); 
-        
+        setSelectedEnrichment(null);
+
         try {
             const wiki = await fetchWikiData(name, lat, lon);
             setSelectedEnrichment({
@@ -563,97 +620,209 @@ export default function Home() {
         }
     };
 
+    const handleSaveTrip = () => {
+        if (!saveName.trim()) return;
+
+        const newTrip: SavedTrip = {
+            id: Math.random().toString(36).substring(7),
+            name: saveName,
+            timestamp: Date.now(),
+            baseCity,
+            accommodation,
+            startDate: startDate.toString(),
+            tripLength,
+            places,
+            transportMode
+        };
+
+        setSavedTrips(prev => [newTrip, ...prev]);
+        setIsSaveModalOpen(false);
+        setSaveName('');
+    };
+
+    const handleLoadTrip = (trip: SavedTrip) => {
+        setBaseCity(trip.baseCity);
+        setAccommodation(trip.accommodation);
+        setStartDate(trip.startDate);
+        setTripLength(trip.tripLength);
+        setPlaces(trip.places);
+        setTransportMode(trip.transportMode);
+        setIsMyTripsOpen(false);
+
+        // Reset operational state to trigger re-plan
+        setSchedule(null);
+        setRouteGeoJson({});
+        setMapCoords([]);
+    };
+
+    const handleDeleteTrip = (id: string) => {
+        setSavedTrips(prev => prev.filter(t => t.id !== id));
+    };
+
+    const handleClearAll = () => {
+        setBaseCity('');
+        setAccommodation('');
+        setStartDate(new Date().toISOString().split('T')[0]);
+        setTripLength(1);
+        setTransportMode('driving-car');
+        setPlaces([]);
+        setSchedule(null);
+        setRouteGeoJson({});
+        setMapCoords([]);
+        setError(null);
+        setAiInput('');
+        setSelectedEnrichment(null);
+    };
+
     return (
         <div className="flex overflow-hidden h-screen bg-[var(--color-surface)] text-[var(--color-on-surface)] font-body">
             {/* SideNavBar Shell */}
             <aside className="h-screen w-72 fixed left-0 top-0 border-r border-[var(--color-outline-variant)]/15 bg-[var(--color-surface-container-lowest)]/70 backdrop-blur-lg shadow-[40px_0_60px_-10px_rgba(0,68,147,0.08)] flex flex-col py-6 z-50">
                 <div className="px-6 mb-10">
-                    <h1 className="text-xl font-bold tracking-tighter text-[var(--color-on-surface)]">TripIt</h1>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-secondary)] font-semibold mt-1">AI Concierge Active</p>
+                    <h1 className="text-xl font-bold tracking-tighter text-[var(--color-on-surface)] font-headline">Yathir.ai</h1>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-secondary)] font-semibold mt-1">AI Concierge</p>
                 </div>
                 <nav className="flex-1 px-3 space-y-6">
-                    <a className="flex items-center gap-3 px-4 py-3 bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] rounded-xl border-r-2 border-[var(--color-secondary)] transition-all" href="#">
+                    <a
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${!isMyTripsOpen ? 'bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] border-r-2 border-[var(--color-secondary)]' : 'text-white/40 hover:bg-white/5'}`}
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(false); }}
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6" /><line x1="9" x2="9" y1="3" y2="18" /><line x1="15" x2="15" y1="6" y2="21" /></svg>
                         <span className="font-medium text-sm">Itinerary</span>
                     </a>
+                    <a
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isMyTripsOpen ? 'bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] border-r-2 border-[var(--color-secondary)]' : 'text-white/40 hover:bg-white/5'}`}
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(true); }}
+                    >
+                        <Globe size={20} />
+                        <span className="font-medium text-sm">My Trips ({savedTrips.length})</span>
+                    </a>
 
-                    {isSpotlightLoading && (
-                        <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
-                             <div className="px-6 mb-4 flex items-center justify-between">
-                                <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
+
+                    {isMyTripsOpen ? (
+                        <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500 overflow-y-auto max-h-[60vh] custom-scrollbar px-3">
+                            <div className="px-3 mb-4 flex items-center justify-between">
+                                <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">Saved Routes</span>
                             </div>
-                            <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3 animate-pulse">
-                                <div className="h-48 w-full bg-white/5" />
-                                <div className="p-6 relative z-10 -mt-10">
-                                    <div className="h-6 w-3/4 bg-white/10 rounded-lg mb-4" />
-                                    <div className="space-y-2 mb-6">
-                                        <div className="h-3 w-full bg-white/5 rounded" />
-                                        <div className="h-3 w-full bg-white/5 rounded" />
-                                        <div className="h-3 w-2/3 bg-white/5 rounded" />
+                            {savedTrips.length === 0 ? (
+                                <div className="p-10 text-center space-y-4">
+                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto opacity-20">
+                                        <Map size={32} />
                                     </div>
-                                    <div className="h-10 w-full bg-[var(--color-primary)]/10 rounded-2xl" />
+                                    <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest">No trips saved yet</p>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {savedTrips.map(trip => (
+                                        <div key={trip.id} className="group relative bg-[var(--color-surface-container-lowest)] p-4 rounded-2xl border border-white/5 hover:border-[var(--color-primary)]/40 transition-all shadow-xl">
+                                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteTrip(trip.id); }}
+                                                    className="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </div>
+                                            <div onClick={() => handleLoadTrip(trip)} className="cursor-pointer space-y-2">
+                                                <h4 className="text-sm font-bold text-white group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">{trip.name}</h4>
+                                                <div className="flex items-center gap-3 text-[9px] font-bold text-white/40 uppercase tracking-widest">
+                                                    <span className="flex items-center gap-1"><MapPin size={8} /> {trip.baseCity}</span>
+                                                    <span className="flex items-center gap-1"><Calendar size={8} /> {new Date(trip.timestamp).toLocaleDateString()}</span>
+                                                </div>
+                                                <div className="text-[8px] text-[var(--color-secondary)] font-black uppercase tracking-[0.2em]">
+                                                    {trip.places.length} STOPS • {trip.tripLength} DAYS
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    )}
-
-                    {!isSpotlightLoading && selectedEnrichment && (
-                        <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
-                            <div className="px-6 mb-4 flex items-center justify-between">
-                                <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
-                                <button onClick={() => setSelectedEnrichment(null)} className="text-white/20 hover:text-white transition-all hover:rotate-90">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-                                </button>
-                            </div>
-                            <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3">
-                                {selectedEnrichment.photo ? (
-                                    <div className="h-48 w-full relative group/photo overflow-hidden bg-[var(--color-surface)] rounded-t-3xl">
-                                        <img src={selectedEnrichment.photo} alt={selectedEnrichment.name} className="w-full h-full object-cover transition-all duration-700 group-hover/photo:scale-110 brightness-[0.85] group-hover/photo:brightness-100" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface-container-lowest)] via-transparent to-transparent opacity-90" />
-                                        <div className="absolute top-4 right-4 flex gap-2.5 items-center">
-                                            {selectedEnrichment.website && (
-                                                <a href={selectedEnrichment.website} title="Official Website" target="_blank" rel="noopener noreferrer" className="p-2.5 bg-black/60 rounded-full text-white hover:bg-[var(--color-primary)] hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl">
-                                                    <Globe size={14} />
-                                                </a>
-                                            )}
-                                            {selectedEnrichment.pageId && (
-                                                <a href={`https://en.wikipedia.org/?curid=${selectedEnrichment.pageId}`} title="Wikipedia Article" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center bg-black/60 rounded-full text-white hover:bg-white hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl">
-                                                    <span className="font-serif italic font-black text-sm">W</span>
-                                                </a>
-                                            )}
+                    ) : (
+                        <>
+                            {isSpotlightLoading && (
+                                <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                                    <div className="px-6 mb-4 flex items-center justify-between">
+                                        <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
+                                    </div>
+                                    <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3 animate-pulse">
+                                        <div className="h-48 w-full bg-white/5" />
+                                        <div className="p-6 relative z-10 -mt-10">
+                                            <div className="h-6 w-3/4 bg-white/10 rounded-lg mb-4" />
+                                            <div className="space-y-2 mb-6">
+                                                <div className="h-3 w-full bg-white/5 rounded" />
+                                                <div className="h-3 w-full bg-white/5 rounded" />
+                                                <div className="h-3 w-2/3 bg-white/5 rounded" />
+                                            </div>
+                                            <div className="h-10 w-full bg-[var(--color-primary)]/10 rounded-2xl" />
                                         </div>
                                     </div>
-                                ) : (
-                                    <div className="h-48 w-full bg-white/5 flex items-center justify-center text-white/10">
-                                        <Sparkles size={32} />
+                                </div>
+                            )}
+
+                            {!isSpotlightLoading && selectedEnrichment && (
+                                <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                                    <div className="px-6 mb-4 flex items-center justify-between">
+                                        <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
+                                        <button onClick={() => setSelectedEnrichment(null)} className="text-white/20 hover:text-white transition-all hover:rotate-90">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                        </button>
                                     </div>
-                                )}
-                                <div className="p-6 relative z-10 -mt-10">
-                                    <h3 className="text-white font-bold text-lg mb-1 leading-tight tracking-tight drop-shadow-md">{selectedEnrichment.name}</h3>
-                                    {selectedEnrichment.summary && (
-                                        <p className="text-[11px] text-white/50 leading-relaxed line-clamp-6 italic mb-4 font-medium opacity-70 serif">{selectedEnrichment.summary}</p>
-                                    )}
-                                    <div className="flex flex-col gap-3">
-                                        {selectedEnrichment.opening_hours && (
-                                            <div className="flex items-center gap-3 bg-black/20 p-3 rounded-2xl border border-white/5 shadow-inner">
-                                                <Clock className="text-[var(--color-secondary)]" size={14} />
-                                                <span className="text-[10px] font-bold text-white/60 tracking-wide uppercase">{getOpenStatus(selectedEnrichment.opening_hours).message}</span>
+                                    <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3">
+                                        {selectedEnrichment.photo ? (
+                                            <div className="h-48 w-full relative group/photo overflow-hidden bg-[var(--color-surface)] rounded-t-3xl">
+                                                <img src={selectedEnrichment.photo} alt={selectedEnrichment.name} className="w-full h-full object-cover transition-all duration-700 group-hover/photo:scale-110 brightness-[0.85] group-hover/photo:brightness-100" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface-container-lowest)] via-[var(--color-surface-container-lowest)]/40 to-transparent opacity-100 z-10" />
+                                                <div className="progressive-blur-bottom" />
+                                                <div className="absolute top-4 right-4 flex gap-2.5 items-center">
+                                                    {selectedEnrichment.website && (
+                                                        <a href={selectedEnrichment.website} title="Official Website" target="_blank" rel="noopener noreferrer" className="p-2.5 bg-black/60 rounded-full text-white hover:bg-[var(--color-primary)] hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl">
+                                                            <Globe size={14} />
+                                                        </a>
+                                                    )}
+                                                    {selectedEnrichment.pageId && (
+                                                        <a href={`https://en.wikipedia.org/?curid=${selectedEnrichment.pageId}`} title="Wikipedia Article" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center bg-black/60 rounded-full text-white hover:bg-white hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl">
+                                                            <span className="font-serif italic font-black text-sm">W</span>
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="h-48 w-full bg-white/5 flex items-center justify-center text-white/10">
+                                                <Sparkles size={32} />
                                             </div>
                                         )}
-                                        {!places.some(p => p.name === selectedEnrichment.name) && (
-                                            <button
-                                                onClick={() => handleAddRecommended(selectedEnrichment)}
-                                                className="w-full bg-[var(--color-primary)] text-black text-[10px] font-bold py-3.5 rounded-2xl shadow-[0_10px_30px_-5px_rgba(75,142,255,0.4)] active:scale-[0.98] transition-all uppercase tracking-[0.2em] mt-1 group"
-                                            >
-                                                Add to Plan
-                                                <Plus size={12} className="inline ml-1 group-hover:rotate-90 transition-transform" />
-                                            </button>
-                                        )}
+                                        <div className="p-6 relative z-10 -mt-10">
+                                            <h3 className="text-white font-bold text-lg mb-1 leading-tight tracking-tight drop-shadow-md">{selectedEnrichment.name}</h3>
+                                            {selectedEnrichment.summary && (
+                                                <p className="text-[11px] text-white/50 leading-relaxed line-clamp-6 italic mb-4 font-medium opacity-70 serif">{selectedEnrichment.summary}</p>
+                                            )}
+                                            <div className="flex flex-col gap-3">
+                                                {selectedEnrichment.opening_hours && (
+                                                    <div className="flex items-center gap-3 bg-black/20 p-3 rounded-2xl border border-white/5 shadow-inner">
+                                                        <Clock className="text-[var(--color-secondary)]" size={14} />
+                                                        <span className="text-[10px] font-bold text-white/60 tracking-wide uppercase">{getOpenStatus(selectedEnrichment.opening_hours).message}</span>
+                                                    </div>
+                                                )}
+                                                {!places.some(p => p.name === selectedEnrichment.name) && (
+                                                    <button
+                                                        onClick={() => handleAddRecommended(selectedEnrichment)}
+                                                        className="w-full bg-[var(--color-primary)] text-black text-[10px] font-bold py-3.5 rounded-2xl shadow-[0_10px_30px_-5px_rgba(75,142,255,0.4)] active:scale-[0.98] transition-all uppercase tracking-[0.2em] mt-1 group"
+                                                    >
+                                                        Add to Plan
+                                                        <Plus size={12} className="inline ml-1 group-hover:rotate-90 transition-transform" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            )}
+                        </>
                     )}
+
 
                 </nav>
 
@@ -747,20 +916,95 @@ export default function Home() {
                 </div>
             </aside>
 
+            {/* Save Trip Modal Overlay */}
+            {isSaveModalOpen && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex items-center justify-center animate-in fade-in duration-300">
+                    <div className="bg-[var(--color-surface-container-lowest)] w-full max-w-md p-8 rounded-[2rem] border border-white/10 shadow-2xl space-y-6">
+                        <div className="space-y-2 text-center">
+                            <div className="w-16 h-16 bg-[var(--color-secondary)]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Save size={32} className="text-[var(--color-secondary)]" />
+                            </div>
+                            <h2 className="text-2xl font-bold tracking-tighter text-white font-headline">Name Your Adventure</h2>
+                            <p className="text-sm text-white/40">Give this itinerary a memorable name to find it later.</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <input
+                                type="text"
+                                value={saveName}
+                                onChange={(e) => setSaveName(e.target.value)}
+                                placeholder="e.g. Autumn in Tokyo 2026"
+                                autoFocus
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)] transition-all text-center text-lg font-medium"
+                            />
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => setIsSaveModalOpen(false)}
+                                    className="px-6 py-4 rounded-2xl border border-white/10 text-white/60 hover:bg-white/5 transition-all font-bold text-xs uppercase tracking-widest"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveTrip}
+                                    disabled={!saveName.trim()}
+                                    className="px-6 py-4 rounded-2xl bg-[var(--color-secondary)] text-black font-bold text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                                >
+                                    Store Route
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Main Map Canvas */}
             <main className="ml-72 flex-1 relative h-screen w-full bg-[var(--color-surface-container-lowest)]">
 
                 {/* Top Navigation */}
-                <header className="fixed top-0 right-0 left-72 h-16 z-40 bg-[var(--color-background)]/80 backdrop-blur-xl flex items-center justify-between px-8">
+                <header className="fixed top-0 right-0 left-72 h-16 z-40 bg-[var(--color-background)] border-b border-white/5 flex items-center justify-between px-8">
                     <div className="flex items-center gap-8">
-                        <a className="text-[var(--color-primary)] border-b-2 border-[var(--color-primary)] pb-1 text-sm font-medium" href="#">My Trips</a>
-                        <a className="text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)] transition-colors text-sm font-medium" href="#">Saved</a>
+                        <a
+                            className={`${!isMyTripsOpen ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]'} pb-1 text-sm font-medium transition-all`}
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(false); }}
+                        >
+                            Planner
+                        </a>
+                        <a
+                            className={`${isMyTripsOpen ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]'} pb-1 text-sm font-medium transition-all`}
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(true); }}
+                        >
+                            Saved Trips
+                        </a>
                     </div>
-                    <div className="flex items-center gap-6">
-                        <div className="relative flex items-center">
-                            <svg className="absolute left-3 text-[var(--color-outline)]" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-                            <input className="bg-[var(--color-surface-container-low)] border-none border-b border-[var(--color-outline-variant)]/20 focus:ring-0 text-sm pl-10 pr-4 py-2 w-64 rounded-lg text-white" placeholder="Search destinations..." type="text" />
-                        </div>
+
+                    {/* Centered Map Mode Toolbar */}
+                    <div className="absolute left-1/2 -translate-x-1/2 flex items-center bg-[var(--color-surface-container-low)] rounded-xl p-1 border border-white/10 shadow-lg">
+                        <button
+                            onClick={() => setMapMode('drag')}
+                            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${mapMode === 'drag' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
+                            title="Pan and Zoom"
+                        >
+                            <Grab size={14} /> Drag
+                        </button>
+                        <button
+                            onClick={() => setMapMode('pin')}
+                            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${mapMode === 'pin' ? 'bg-[var(--color-secondary)] text-black shadow-[0_0_15px_rgba(83,225,111,0.3)]' : 'text-white/40 hover:bg-white/5'}`}
+                            title="Drop Pin to Add Location"
+                        >
+                            <MapPin size={14} /> Pin
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setIsSaveModalOpen(true)}
+                            className="flex items-center gap-2 bg-[var(--color-secondary)] text-black px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
+                        >
+                            <Save size={14} /> Save Trip
+                        </button>
                     </div>
                 </header>
 
@@ -816,6 +1060,8 @@ export default function Home() {
                             })
                         }
                         onMarkerClick={(s) => handleSpotlight(s.place, s.latlon[0], s.latlon[1])}
+                        mapMode={mapMode}
+                        onMapClick={handleMapClick}
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)] via-transparent to-transparent pointer-events-none"></div>
                 </div>
@@ -826,12 +1072,18 @@ export default function Home() {
                         {isConfigExpanded ? (
                             <>
                                 <div className="space-y-1">
-                                    <div className="flex items-center justify-between mb-1">
+                                    <div
+                                        className="flex items-center justify-between"
+                                        style={{ marginBottom: 'var(--panel-vertical-rhythm)' }}
+                                    >
                                         <div className="flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full bg-[var(--color-secondary)] shadow-[0_0_8px_rgba(83,225,111,0.6)]"></div>
-                                            <span className="text-[10px] font-bold tracking-[0.1em] text-[var(--color-secondary)] uppercase">AI Optimization Panel</span>
+                                            <span className="text-[10px] font-bold tracking-[0.1em] text-[var(--color-secondary)] uppercase">Optimization Panel</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div
+                                            className="flex items-center"
+                                            style={{ gap: 'var(--action-bar-gap)' }}
+                                        >
                                             <button
                                                 onClick={() => setIsAiOpen(!isAiOpen)}
                                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${isAiOpen ? 'bg-[var(--color-primary-container)] text-[var(--color-on-primary-container)] border-transparent shadow-[0_0_12px_var(--color-primary)]' : 'bg-transparent text-[var(--color-primary)] border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/10'}`}
@@ -840,15 +1092,25 @@ export default function Home() {
                                                 Magic
                                             </button>
                                             <button
+                                                onClick={handleClearAll}
+                                                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all group"
+                                                title="Clear All Inputs"
+                                            >
+                                                <RotateCcw size={12} className="group-hover:rotate-[-90deg] transition-transform" />
+                                                Clear
+                                            </button>
+                                            <button
                                                 onClick={() => setIsConfigExpanded(false)}
-                                                className="p-2 hover:bg-white/5 rounded-xl text-white/20 hover:text-white transition-all"
+                                                className="p-2 hover:bg-white/5 rounded-xl text-white/20 hover:text-white transition-all ml-1"
                                                 title="Minimize"
                                             >
                                                 <Minimize2 size={16} />
                                             </button>
                                         </div>
                                     </div>
-                                    <h2 className="text-2xl font-bold text-[var(--color-on-surface)] tracking-tight">Configure Your Voyage</h2>
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-2xl font-bold text-[var(--color-on-surface)] tracking-tight font-headline">CONFIGURE YOUR TRIP</h2>
+                                    </div>
 
                                     {isAiOpen && (
                                         <div className="mt-4 p-4 bg-[var(--color-surface-container-lowest)] rounded-2xl border border-[var(--color-primary)]/20 animate-in fade-in slide-in-from-top-2 relative overflow-hidden">
@@ -1077,15 +1339,25 @@ export default function Home() {
                                         </button>
                                     </div>
 
-                                    <div className="relative group px-1">
-                                        <Search size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[var(--color-secondary)] transition-colors" />
-                                        <input
-                                            type="text"
-                                            value={interest}
-                                            onChange={(e) => setInterest(e.target.value)}
-                                            placeholder="What are you in the mood for? (e.g. Art, Coffee, Landmarks)"
-                                            className="w-full bg-white/5 border border-white/5 rounded-xl pl-9 pr-4 py-2 text-[11px] text-white placeholder-white/20 focus:border-[var(--color-secondary)]/50 focus:bg-white/[0.08] outline-none transition-all"
-                                        />
+                                    <div className="flex items-center gap-2 px-1">
+                                        <div className="relative group flex-1">
+                                            <Search size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[var(--color-secondary)] transition-colors" />
+                                            <input
+                                                type="text"
+                                                value={interest}
+                                                onChange={(e) => setInterest(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleDiscover()}
+                                                placeholder="What are you in the mood for? (e.g. Art, Coffee, Landmarks)"
+                                                className="w-full bg-white/5 border border-white/5 rounded-xl pl-9 pr-4 py-2 text-[11px] text-white placeholder-white/20 focus:border-[var(--color-secondary)]/50 focus:bg-white/[0.08] outline-none transition-all"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleDiscover}
+                                            disabled={isRecommending || !interest}
+                                            className="bg-white/5 hover:bg-white/10 text-white/60 hover:text-white px-3 py-2 rounded-xl border border-white/5 hover:border-white/20 text-[10px] font-bold transition-all uppercase tracking-tighter disabled:opacity-30 disabled:pointer-events-none"
+                                        >
+                                            Search
+                                        </button>
                                     </div>
 
                                     {isRecommending && (
@@ -1108,6 +1380,8 @@ export default function Home() {
                                                     {poi.photo && (
                                                         <div className="h-28 w-full overflow-hidden">
                                                             <img src={poi.photo} alt={poi.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                                            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--color-surface-container-lowest)] via-[var(--color-surface-container-lowest)]/30 to-transparent z-10" />
+                                                            <div className="progressive-blur-bottom" />
                                                             <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/60 to-transparent p-3">
                                                                 <span className="text-[8px] font-black uppercase tracking-widest text-white/80 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/5">Wikimedia Photo</span>
                                                             </div>
@@ -1275,11 +1549,10 @@ export default function Home() {
                                                                         </div>
 
                                                                         {Math.abs(travelInfo.delay) > 0.5 && (
-                                                                            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-tighter border shadow-sm ${
-                                                                                travelInfo.delay > 0
-                                                                                    ? (travelInfo.delay > 2 ? 'bg-red-500/20 border-red-500/30 text-red-100' : 'bg-orange-500/20 border-orange-500/30 text-orange-100')
-                                                                                    : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-100'
-                                                                            }`}>
+                                                                            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-tighter border shadow-sm ${travelInfo.delay > 0
+                                                                                ? (travelInfo.delay > 2 ? 'bg-red-500/20 border-red-500/30 text-red-100' : 'bg-orange-500/20 border-orange-500/30 text-orange-100')
+                                                                                : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-100'
+                                                                                }`}>
                                                                                 <Activity size={10} />
                                                                                 {travelInfo.delay > 0 ? '+' : ''}{travelInfo.delay.toFixed(1)}m traffic
                                                                             </div>

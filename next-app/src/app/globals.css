@@ -49,9 +49,13 @@
   --color-inverse-surface: #e5e2e1;
   --color-on-tertiary-fixed-variant: #7c2e00;
 
-  --font-headline: "Inter", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-label: "Inter", sans-serif;
+  --font-headline: var(--font-space-mono), monospace;
+  --font-body: var(--font-geist-sans), sans-serif;
+  --font-label: var(--font-geist-mono), monospace;
+
+  /* Layout Spacing */
+  --action-bar-gap: 0.75rem; /* Gap between Magic/Clear/Minimize */
+  --panel-vertical-rhythm: 0.75rem; /* Margin between action bar and heading */
 }
 
 @layer utilities {
@@ -60,6 +64,7 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
+
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
@@ -67,6 +72,37 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+/* 
+   PROGRESSIVE BLUR SYSTEM 
+   Multi-layered backdrop blur for premium transitions.
+*/
+.progressive-blur-bottom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.progressive-blur-bottom::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  mask-image: linear-gradient(to bottom, transparent 40%, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 40%, black 100%);
+}
+
+.progressive-blur-bottom::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  mask-image: linear-gradient(to bottom, transparent 70%, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 70%, black 100%);
 }
 
 body {
