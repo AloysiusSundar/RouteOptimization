@@ -184,7 +184,7 @@ export default function MapComponent({
 
             return (
               <Marker 
-                key={`marker-${i}`} 
+                key={stop?.id || `marker-${i}`} 
                 position={coord} 
                 icon={icon}
                 eventHandlers={{

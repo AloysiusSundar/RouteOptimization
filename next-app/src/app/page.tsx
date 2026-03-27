@@ -367,7 +367,7 @@ export default function Home() {
 
                 if (hasAnchor) {
                     dayCoords = [anchorCoords as [number, number], ...dayCoords];
-                    dayPlaces = [{ name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, forcedDate: forcedDateStr }, ...dayPlaces];
+                    dayPlaces = [{ id: `hotel-start-${forcedDateStr}`, name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, forcedDate: forcedDateStr }, ...dayPlaces];
                 }
 
                 // V7.2: Data-Proven Traffic Modeling (TomTom Priority for small sets, ORS for large)
@@ -394,7 +394,7 @@ export default function Home() {
                     if (hasAnchor && localIdx === 0) {
                         // Add Hotel Start
                         finalOrderedCoords.push(anchorCoords as [number, number]);
-                        finalOrderedPlaces.push({ name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, is_stay_anchor: true, forcedDate: forcedDateStr });
+                        finalOrderedPlaces.push({ id: `hotel-start-${forcedDateStr}`, name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, is_stay_anchor: true, forcedDate: forcedDateStr });
                     } else {
                         const globalIdx = day.indices[hasAnchor ? localIdx - 1 : localIdx];
                         finalOrderIndices.push(globalIdx);
@@ -407,14 +407,12 @@ export default function Home() {
                 // Add Hotel End for Round Trip
                 if (hasAnchor) {
                     finalOrderedCoords.push(anchorCoords as [number, number]);
-                    finalOrderedPlaces.push({ name: `Stay Location (End)`, visit_duration: 0, is_reservation: false, is_stay_anchor: true, forcedDate: forcedDateStr });
+                    finalOrderedPlaces.push({ id: `hotel-end-${forcedDateStr}`, name: `Stay Location (End)`, visit_duration: 0, is_reservation: false, is_stay_anchor: true, forcedDate: forcedDateStr });
                 }
 
                 // Track count for polyline slicing
                 dayStopCounts.push(dayCountForPoly);
             }
-
-            console.log('🏁 Multi-Day Global Order:', finalOrderIndices);
 
             console.log('🏁 Multi-Day Global Order:', finalOrderIndices);
 
@@ -552,6 +550,7 @@ export default function Home() {
                 latlon: p.coords
             }))
             : currentSchedule.filter(s => s.isReservation).map(s => ({
+                id: s.id,
                 name: s.place,
                 date: s.date,
                 time: s.time,
@@ -586,16 +585,35 @@ export default function Home() {
             let focus: [number, number] | undefined = undefined;
 
             if (data.baseCity) {
-                setBaseCity(data.baseCity);
-                const cityCoords = await getCoordinates(data.baseCity);
-                if (cityCoords) focus = cityCoords;
+                console.log(`🔍 AI Auto-Verifying Base City: ${data.baseCity}...`);
+                const baseSuggestions = await getAutocompleteSuggestions(data.baseCity, undefined, 500);
+                const bestBase = baseSuggestions[0];
+                if (bestBase) {
+                    setBaseCity(bestBase.name);
+                    setBaseCityCoords(bestBase.coords);
+                    focus = bestBase.coords;
+                } else {
+                    setBaseCity(data.baseCity);
+                    const cityCoords = await getCoordinates(data.baseCity);
+                    if (cityCoords) focus = cityCoords;
+                }
             } else if (baseCity) {
                 const cityCoords = await getCoordinates(baseCity);
                 if (cityCoords) focus = cityCoords;
             }
 
             if (data.stayLocation) {
-                setAccommodation(data.stayLocation);
+                console.log(`🔍 AI Auto-Verifying Stay Location: ${data.stayLocation}...`);
+                const staySuggestions = await getAutocompleteSuggestions(data.stayLocation, focus, 100);
+                const bestStay = staySuggestions[0];
+                if (bestStay) {
+                    setAccommodation(bestStay.name);
+                    setAccommodationCoords(bestStay.coords);
+                } else {
+                    setAccommodation(data.stayLocation);
+                    const stayCoords = await getCoordinates(data.stayLocation, focus);
+                    if (stayCoords) setAccommodationCoords(stayCoords);
+                }
             }
 
             if (data.places) {
@@ -880,9 +898,9 @@ export default function Home() {
                                 <div className="h-px flex-1 bg-white/5 ml-3" />
                             </div>
                             <div className="space-y-2">
-                                {analytics.reservationDetails.map((res, i) => (
+                                {analytics.reservationDetails.map((res) => (
                                     <div
-                                        key={i}
+                                        key={res.id || `${res.name}-${res.date}-${res.time}`}
                                         onClick={() => res.latlon && handleSpotlight(res.name, res.latlon[0], res.latlon[1])}
                                         className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center justify-between group/res hover:bg-white/5 hover:border-[var(--color-primary)]/30 hover:-translate-y-0.5 transition-all cursor-pointer shadow-lg active:scale-[0.98]"
                                     >
@@ -1595,7 +1613,7 @@ export default function Home() {
                                                     } : null;
 
                                                     return (
-                                                        <Fragment key={i}>
+                                                        <Fragment key={stop.id}>
                                                             <div
                                                                 onClick={() => handleSpotlight(stop.place, stop.latlon[0], stop.latlon[1])}
                                                                 className="relative group hover:-translate-y-1 transition-transform cursor-pointer"
