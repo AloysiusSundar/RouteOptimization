@@ -410,7 +410,7 @@ export default function Home() {
                 if (dayCoords.length <= 20) {
                     dayDurations = await getTomTomDurationsMatrix(dayCoords, transportMode);
                 }
-                
+
                 if (dayDurations) {
                     console.log('🚥 TomTom Traffic-Aware Matrix Acquired.');
                 } else {
@@ -455,7 +455,7 @@ export default function Home() {
             // Optimization: We only need the durations for the SPECIFIC sequence found by the solver (N-1 legs).
             // A full Matrix (N^2) for the whole trip is redundant and slow for 10+ stops.
             const baseDurations = await getDurationsMatrix(finalOrderedCoords, transportMode);
-            
+
             // Sparse matrices for Schedule Generation
             const liveMatrix: number[][] = Array(finalOrderedCoords.length).fill(0).map(() => Array(finalOrderedCoords.length).fill(0));
             const historicalMatrix: number[][] = Array(finalOrderedCoords.length).fill(0).map(() => Array(finalOrderedCoords.length).fill(0));
@@ -484,7 +484,7 @@ export default function Home() {
             const sched = generateSchedule(
                 finalOrderedPlaces,
                 finalOrderedCoords,
-                finalOrderedPlaces.map((_, idx: number) => idx), 
+                finalOrderedPlaces.map((_, idx: number) => idx),
                 new Date(startDate + "T00:00:00"),
                 activeHours,
                 liveMatrix,
@@ -743,261 +743,263 @@ export default function Home() {
     return (
         <div className="flex overflow-hidden h-screen bg-[var(--color-surface)] text-[var(--color-on-surface)] font-body">
             {/* SideNavBar Shell */}
-            <aside className="h-screen w-72 fixed left-0 top-0 border-r border-[var(--color-outline-variant)]/15 bg-[var(--color-surface-container-lowest)]/70 backdrop-blur-lg shadow-[40px_0_60px_-10px_rgba(0,68,147,0.08)] flex flex-col py-6 z-50">
-                <div className="px-6 mb-10">
+            <aside className="h-screen w-72 fixed left-0 top-0 border-r border-[var(--color-outline-variant)]/15 bg-[var(--color-surface-container-lowest)]/70 backdrop-blur-lg shadow-[40px_0_60px_-10px_rgba(0,68,147,0.08)] flex flex-col z-50">
+                <div className="px-6 pt-8 mb-10 shrink-0">
                     <h1 className="text-xl font-bold tracking-tighter text-[var(--color-on-surface)] font-headline">Yathir.ai</h1>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-secondary)] font-semibold mt-1">AI Concierge</p>
                 </div>
-                <nav className="flex-1 px-3 space-y-6">
-                    <a
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${!isMyTripsOpen ? 'bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] border-r-2 border-[var(--color-secondary)]' : 'text-white/40 hover:bg-white/5'}`}
-                        href="#"
-                        onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(false); }}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6" /><line x1="9" x2="9" y1="3" y2="18" /><line x1="15" x2="15" y1="6" y2="21" /></svg>
-                        <span className="font-medium text-sm">Itinerary</span>
-                    </a>
-                    <a
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isMyTripsOpen ? 'bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] border-r-2 border-[var(--color-secondary)]' : 'text-white/40 hover:bg-white/5'}`}
-                        href="#"
-                        onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(true); }}
-                    >
-                        <Globe size={20} />
-                        <span className="font-medium text-sm">My Trips ({savedTrips.length})</span>
-                    </a>
+                <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                    <nav className="px-3 space-y-6 mb-8">
+                        <a
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${!isMyTripsOpen ? 'bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] border-r-2 border-[var(--color-secondary)]' : 'text-white/40 hover:bg-white/5'}`}
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(false); }}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6" /><line x1="9" x2="9" y1="3" y2="18" /><line x1="15" x2="15" y1="6" y2="21" /></svg>
+                            <span className="font-medium text-sm">Itinerary</span>
+                        </a>
+                        <a
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isMyTripsOpen ? 'bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] border-r-2 border-[var(--color-secondary)]' : 'text-white/40 hover:bg-white/5'}`}
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(true); }}
+                        >
+                            <Globe size={20} />
+                            <span className="font-medium text-sm">My Trips ({savedTrips.length})</span>
+                        </a>
 
 
-                    {isMyTripsOpen ? (
-                        <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500 overflow-y-auto max-h-[60vh] custom-scrollbar px-3">
-                            <div className="px-3 mb-4 flex items-center justify-between">
-                                <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">Saved Routes</span>
-                            </div>
-                            {savedTrips.length === 0 ? (
-                                <div className="p-10 text-center space-y-4">
-                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto opacity-20">
-                                        <Map size={32} />
-                                    </div>
-                                    <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest">No trips saved yet</p>
+                        {isMyTripsOpen ? (
+                            <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500 overflow-y-auto max-h-[60vh] custom-scrollbar px-3">
+                                <div className="px-3 mb-4 flex items-center justify-between">
+                                    <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">Saved Routes</span>
                                 </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {savedTrips.map(trip => (
-                                        <div key={trip.id} className="group relative bg-[var(--color-surface-container-lowest)] p-4 rounded-2xl border border-white/5 hover:border-[var(--color-primary)]/40 transition-all shadow-xl">
-                                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteTrip(trip.id); }}
-                                                    className="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
+                                {savedTrips.length === 0 ? (
+                                    <div className="p-10 text-center space-y-4">
+                                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto opacity-20">
+                                            <Map size={32} />
+                                        </div>
+                                        <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest">No trips saved yet</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {savedTrips.map(trip => (
+                                            <div key={trip.id} className="group relative bg-[var(--color-surface-container-lowest)] p-4 rounded-2xl border border-white/5 hover:border-[var(--color-primary)]/40 transition-all shadow-xl">
+                                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteTrip(trip.id); }}
+                                                        className="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                                <div onClick={() => handleLoadTrip(trip)} className="cursor-pointer space-y-2">
+                                                    <h4 className="text-sm font-bold text-white group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">{trip.name}</h4>
+                                                    <div className="flex items-center gap-3 text-[9px] font-bold text-white/40 uppercase tracking-widest">
+                                                        <span className="flex items-center gap-1"><MapPin size={8} /> {trip.baseCity}</span>
+                                                        <span className="flex items-center gap-1"><Calendar size={8} /> {new Date(trip.timestamp).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="text-[8px] text-[var(--color-secondary)] font-black uppercase tracking-[0.2em]">
+                                                        {trip.places.length} STOPS • {trip.tripLength} DAYS
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div onClick={() => handleLoadTrip(trip)} className="cursor-pointer space-y-2">
-                                                <h4 className="text-sm font-bold text-white group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">{trip.name}</h4>
-                                                <div className="flex items-center gap-3 text-[9px] font-bold text-white/40 uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1"><MapPin size={8} /> {trip.baseCity}</span>
-                                                    <span className="flex items-center gap-1"><Calendar size={8} /> {new Date(trip.timestamp).toLocaleDateString()}</span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                {isSpotlightLoading && (
+                                    <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                                        <div className="px-6 mb-4 flex items-center justify-between">
+                                            <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
+                                        </div>
+                                        <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3 animate-pulse">
+                                            <div className="h-48 w-full bg-white/5" />
+                                            <div className="p-6 relative z-10 -mt-10">
+                                                <div className="h-6 w-3/4 bg-white/10 rounded-lg mb-4" />
+                                                <div className="space-y-2 mb-6">
+                                                    <div className="h-3 w-full bg-white/5 rounded" />
+                                                    <div className="h-3 w-full bg-white/5 rounded" />
+                                                    <div className="h-3 w-2/3 bg-white/5 rounded" />
                                                 </div>
-                                                <div className="text-[8px] text-[var(--color-secondary)] font-black uppercase tracking-[0.2em]">
-                                                    {trip.places.length} STOPS • {trip.tripLength} DAYS
+                                                <div className="h-10 w-full bg-[var(--color-primary)]/10 rounded-2xl" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!isSpotlightLoading && selectedEnrichment && (
+                                    <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                                        <div className="px-6 mb-4 flex items-center justify-between">
+                                            <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
+                                            <button onClick={() => setSelectedEnrichment(null)} className="text-white/20 hover:text-white transition-all hover:rotate-90">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                            </button>
+                                        </div>
+                                        <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3">
+                                            {selectedEnrichment.photo ? (
+                                                <div className="h-48 w-full relative group/photo overflow-hidden bg-[var(--color-surface)] rounded-t-3xl">
+                                                    <img src={selectedEnrichment.photo} alt={selectedEnrichment.name} className="w-full h-full object-cover transition-all duration-700 group-hover/photo:scale-110 brightness-[0.85] group-hover/photo:brightness-100" />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface-container-lowest)] via-[var(--color-surface-container-lowest)]/40 to-transparent opacity-100 z-10" />
+                                                    <div className="progressive-blur-bottom" />
+                                                    <div className="absolute top-4 right-4 flex gap-2.5 items-center z-50">
+                                                        {selectedEnrichment.website && (
+                                                            <a href={selectedEnrichment.website} title="Official Website" target="_blank" rel="noopener noreferrer" className="p-2.5 bg-black/60 rounded-full text-white hover:bg-[var(--color-primary)] hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl">
+                                                                <Globe size={14} />
+                                                            </a>
+                                                        )}
+                                                        {selectedEnrichment.pageId && (
+                                                            <a href={`https://en.wikipedia.org/?curid=${selectedEnrichment.pageId}`} title="Wikipedia Article" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center bg-black/60 rounded-full text-white hover:bg-white hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl group/wiki">
+                                                                <span className="text-[17px] font-bold leading-none translate-y-[1px] group-hover/wiki:scale-110 transition-transform" style={{ fontFamily: '"Linux Libertine", "Hoefler Text", var(--font-libre-baskerville), serif' }}>W</span>
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 </div>
+                                            ) : (
+                                                <div className="h-48 w-full bg-white/5 flex items-center justify-center text-white/10">
+                                                    <Sparkles size={32} />
+                                                </div>
+                                            )}
+                                            <div className="p-6 relative z-10 -mt-10">
+                                                <h3 className="text-white font-bold text-lg mb-1 leading-tight tracking-tight drop-shadow-md">{selectedEnrichment.name}</h3>
+                                                {selectedEnrichment.summary && (
+                                                    <p className="text-[11px] text-white/50 leading-relaxed line-clamp-6 italic mb-4 font-medium opacity-70 serif">{selectedEnrichment.summary}</p>
+                                                )}
+                                                <div className="flex flex-col gap-3">
+                                                    {selectedEnrichment.opening_hours && (
+                                                        <div className="flex items-center gap-3 bg-black/20 p-3 rounded-2xl border border-white/5 shadow-inner">
+                                                            <Clock className="text-[var(--color-secondary)]" size={14} />
+                                                            <span className="text-[10px] font-bold text-white/60 tracking-wide uppercase">{getOpenStatus(selectedEnrichment.opening_hours).message}</span>
+                                                        </div>
+                                                    )}
+                                                    {!places.some(p => p.name === selectedEnrichment.name) && (
+                                                        <button
+                                                            onClick={() => handleAddRecommended(selectedEnrichment)}
+                                                            className="w-full bg-[var(--color-primary)] text-black text-[10px] font-bold py-3.5 rounded-2xl shadow-[0_10px_30px_-5px_rgba(75,142,255,0.4)] active:scale-[0.98] transition-all uppercase tracking-[0.2em] mt-1 group"
+                                                        >
+                                                            Add to Plan
+                                                            <Plus size={12} className="inline ml-1 group-hover:rotate-90 transition-transform" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+
+                    </nav>
+
+                    {/* Trip Analytics (V6.7) */}
+                    <div className="mt-auto border-t border-white/5 bg-black/20 p-6 space-y-5 animate-in slide-in-from-bottom-4 fade-in duration-1000">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] animate-pulse" />
+                            <span className="text-xs font-mono font-bold tracking-[0.2em] text-white/50 uppercase">Trip Analytics</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-primary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                                <div className="flex items-center gap-2 text-[var(--color-primary)] opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <MapPin size={12} />
+                                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Stops</span>
+                                </div>
+                                <div className="text-lg font-black text-white">{analytics.stops}</div>
+                            </div>
+
+                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-secondary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                                <div className="flex items-center gap-2 text-[var(--color-secondary)] opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <Clock size={12} />
+                                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Hours</span>
+                                </div>
+                                <div className="text-lg font-black text-white">{analytics.hours}</div>
+                            </div>
+
+                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-blue-400/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                                <div className="flex items-center gap-2 text-blue-400 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <Route size={12} />
+                                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Distance</span>
+                                </div>
+                                <div className="text-lg font-black text-white">{analytics.distance} <span className="text-[10px] text-white/40">km</span></div>
+                            </div>
+
+                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-purple-400/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                                <div className="flex items-center gap-2 text-purple-400 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <CalendarCheck size={12} />
+                                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Bookings</span>
+                                </div>
+                                <div className="text-lg font-black text-white">{analytics.reservations}</div>
+                            </div>
+                        </div>
+
+                        {analytics.reservationDetails.length > 0 && (
+                            <div className="space-y-3 pt-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[9px] font-bold tracking-[0.2em] text-white/30 uppercase">Confirmed Bookings</span>
+                                    <div className="h-px flex-1 bg-white/5 ml-3" />
+                                </div>
+                                <div className="space-y-2">
+                                    {analytics.reservationDetails.map((res) => (
+                                        <div
+                                            key={res.id || `${res.name}-${res.date}-${res.time}`}
+                                            onClick={() => res.latlon && handleSpotlight(res.name, res.latlon[0], res.latlon[1])}
+                                            className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center justify-between group/res hover:bg-white/5 hover:border-[var(--color-primary)]/30 hover:-translate-y-0.5 transition-all cursor-pointer shadow-lg active:scale-[0.98]"
+                                        >
+                                            <div className="space-y-0.5">
+                                                <div className="text-[11px] font-bold text-white group-hover/res:text-[var(--color-primary)] transition-colors line-clamp-1">{res.name}</div>
+                                                <div className="text-[9px] text-white/40 uppercase tracking-wider">{res.date}</div>
+                                            </div>
+                                            <div className="text-[10px] font-mono font-bold text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 px-2 py-1 rounded-lg group-hover/res:bg-[var(--color-secondary)] group-hover/res:text-black transition-all">
+                                                {res.time}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                            )}
-                        </div>
-                    ) : (
-                        <>
-                            {isSpotlightLoading && (
-                                <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
-                                    <div className="px-6 mb-4 flex items-center justify-between">
-                                        <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
+                            </div>
+                        )}
+
+                        {isWeatherLoading ? (
+                            <div className="bg-white/5 p-4 rounded-3xl border border-white/5 flex items-center justify-center h-20 animate-pulse">
+                                <Loader2 size={20} className="text-[var(--color-primary)] animate-spin opacity-40" />
+                            </div>
+                        ) : weather ? (() => {
+                            const Icon = WEATHER_ICON_MAP[weather.iconCode] || Cloud;
+                            return (
+                                <div className="bg-gradient-to-br from-[var(--color-primary)]/10 to-transparent p-4 rounded-3xl border border-white/5 flex items-center justify-between group hover:from-[var(--color-primary)]/20 transition-all cursor-default relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-1 opacity-10">
+                                        <Icon size={40} className="text-[var(--color-primary)]" />
                                     </div>
-                                    <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3 animate-pulse">
-                                        <div className="h-48 w-full bg-white/5" />
-                                        <div className="p-6 relative z-10 -mt-10">
-                                            <div className="h-6 w-3/4 bg-white/10 rounded-lg mb-4" />
-                                            <div className="space-y-2 mb-6">
-                                                <div className="h-3 w-full bg-white/5 rounded" />
-                                                <div className="h-3 w-full bg-white/5 rounded" />
-                                                <div className="h-3 w-2/3 bg-white/5 rounded" />
-                                            </div>
-                                            <div className="h-10 w-full bg-[var(--color-primary)]/10 rounded-2xl" />
+                                    <div className="space-y-0.5 relative z-10">
+                                        <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">Current Weather</div>
+                                        <div className="text-base font-black text-white flex items-center gap-2">
+                                            {weather.temp}°C
+                                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter truncate max-w-[80px]">{weather.description}</span>
+                                        </div>
+                                        <div className="text-[8px] text-[var(--color-secondary)] font-black uppercase tracking-[0.2em] mt-0.5 flex items-center gap-1">
+                                            <MapPin size={8} /> {weather.location}
                                         </div>
                                     </div>
+                                    <Icon size={24} className="text-[var(--color-primary)] opacity-40 group-hover:opacity-80 transition-opacity" />
                                 </div>
-                            )}
-
-                            {!isSpotlightLoading && selectedEnrichment && (
-                                <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
-                                    <div className="px-6 mb-4 flex items-center justify-between">
-                                        <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
-                                        <button onClick={() => setSelectedEnrichment(null)} className="text-white/20 hover:text-white transition-all hover:rotate-90">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-                                        </button>
-                                    </div>
-                                    <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3">
-                                        {selectedEnrichment.photo ? (
-                                            <div className="h-48 w-full relative group/photo overflow-hidden bg-[var(--color-surface)] rounded-t-3xl">
-                                                <img src={selectedEnrichment.photo} alt={selectedEnrichment.name} className="w-full h-full object-cover transition-all duration-700 group-hover/photo:scale-110 brightness-[0.85] group-hover/photo:brightness-100" />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface-container-lowest)] via-[var(--color-surface-container-lowest)]/40 to-transparent opacity-100 z-10" />
-                                                <div className="progressive-blur-bottom" />
-                                                <div className="absolute top-4 right-4 flex gap-2.5 items-center">
-                                                    {selectedEnrichment.website && (
-                                                        <a href={selectedEnrichment.website} title="Official Website" target="_blank" rel="noopener noreferrer" className="p-2.5 bg-black/60 rounded-full text-white hover:bg-[var(--color-primary)] hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl">
-                                                            <Globe size={14} />
-                                                        </a>
-                                                    )}
-                                                    {selectedEnrichment.pageId && (
-                                                        <a href={`https://en.wikipedia.org/?curid=${selectedEnrichment.pageId}`} title="Wikipedia Article" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center bg-black/60 rounded-full text-white hover:bg-white hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl">
-                                                            <span className="font-serif italic font-black text-sm">W</span>
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="h-48 w-full bg-white/5 flex items-center justify-center text-white/10">
-                                                <Sparkles size={32} />
-                                            </div>
-                                        )}
-                                        <div className="p-6 relative z-10 -mt-10">
-                                            <h3 className="text-white font-bold text-lg mb-1 leading-tight tracking-tight drop-shadow-md">{selectedEnrichment.name}</h3>
-                                            {selectedEnrichment.summary && (
-                                                <p className="text-[11px] text-white/50 leading-relaxed line-clamp-6 italic mb-4 font-medium opacity-70 serif">{selectedEnrichment.summary}</p>
-                                            )}
-                                            <div className="flex flex-col gap-3">
-                                                {selectedEnrichment.opening_hours && (
-                                                    <div className="flex items-center gap-3 bg-black/20 p-3 rounded-2xl border border-white/5 shadow-inner">
-                                                        <Clock className="text-[var(--color-secondary)]" size={14} />
-                                                        <span className="text-[10px] font-bold text-white/60 tracking-wide uppercase">{getOpenStatus(selectedEnrichment.opening_hours).message}</span>
-                                                    </div>
-                                                )}
-                                                {!places.some(p => p.name === selectedEnrichment.name) && (
-                                                    <button
-                                                        onClick={() => handleAddRecommended(selectedEnrichment)}
-                                                        className="w-full bg-[var(--color-primary)] text-black text-[10px] font-bold py-3.5 rounded-2xl shadow-[0_10px_30px_-5px_rgba(75,142,255,0.4)] active:scale-[0.98] transition-all uppercase tracking-[0.2em] mt-1 group"
-                                                    >
-                                                        Add to Plan
-                                                        <Plus size={12} className="inline ml-1 group-hover:rotate-90 transition-transform" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
+                            );
+                        })() : (
+                            <div className="bg-white/5 p-4 rounded-3xl border border-white/5 flex items-center justify-between group transition-all cursor-default relative overflow-hidden">
+                                <div className="space-y-1 relative z-10">
+                                    <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">Real-time Weather</div>
+                                    <div className="text-xs font-bold text-white/60">
+                                        Set location to see weather
                                     </div>
                                 </div>
-                            )}
-                        </>
-                    )}
+                                <Sun size={24} className="text-white/10" />
+                            </div>
+                        )}
 
-
-                </nav>
-
-                {/* Trip Analytics (V6.7) */}
-                <div className="mt-auto border-t border-white/5 bg-black/20 p-6 space-y-5 animate-in slide-in-from-bottom-4 fade-in duration-1000">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] animate-pulse" />
-                        <span className="text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase">Trip Analytics</span>
+                        <p className="text-[9px] text-white/20 leading-relaxed font-medium italic">
+                            "Travel is the only thing you buy that makes you richer."
+                        </p>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-primary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
-                            <div className="flex items-center gap-2 text-[var(--color-primary)] opacity-60 group-hover:opacity-100 transition-opacity">
-                                <MapPin size={10} />
-                                <span className="text-[8px] font-bold uppercase tracking-widest">Stops</span>
-                            </div>
-                            <div className="text-lg font-black text-white">{analytics.stops}</div>
-                        </div>
-
-                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-secondary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
-                            <div className="flex items-center gap-2 text-[var(--color-secondary)] opacity-60 group-hover:opacity-100 transition-opacity">
-                                <Clock size={10} />
-                                <span className="text-[8px] font-bold uppercase tracking-widest">Hours</span>
-                            </div>
-                            <div className="text-lg font-black text-white">{analytics.hours}</div>
-                        </div>
-
-                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-blue-400/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
-                            <div className="flex items-center gap-2 text-blue-400 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <Route size={10} />
-                                <span className="text-[8px] font-bold uppercase tracking-widest">Distance</span>
-                            </div>
-                            <div className="text-lg font-black text-white">{analytics.distance} <span className="text-[10px] text-white/40">km</span></div>
-                        </div>
-
-                        <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-purple-400/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
-                            <div className="flex items-center gap-2 text-purple-400 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <CalendarCheck size={10} />
-                                <span className="text-[8px] font-bold uppercase tracking-widest">Bookings</span>
-                            </div>
-                            <div className="text-lg font-black text-white">{analytics.reservations}</div>
-                        </div>
-                    </div>
-
-                    {analytics.reservationDetails.length > 0 && (
-                        <div className="space-y-3 pt-2">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-bold tracking-[0.2em] text-white/30 uppercase">Confirmed Bookings</span>
-                                <div className="h-px flex-1 bg-white/5 ml-3" />
-                            </div>
-                            <div className="space-y-2">
-                                {analytics.reservationDetails.map((res) => (
-                                    <div
-                                        key={res.id || `${res.name}-${res.date}-${res.time}`}
-                                        onClick={() => res.latlon && handleSpotlight(res.name, res.latlon[0], res.latlon[1])}
-                                        className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center justify-between group/res hover:bg-white/5 hover:border-[var(--color-primary)]/30 hover:-translate-y-0.5 transition-all cursor-pointer shadow-lg active:scale-[0.98]"
-                                    >
-                                        <div className="space-y-0.5">
-                                            <div className="text-[11px] font-bold text-white group-hover/res:text-[var(--color-primary)] transition-colors line-clamp-1">{res.name}</div>
-                                            <div className="text-[9px] text-white/40 uppercase tracking-wider">{res.date}</div>
-                                        </div>
-                                        <div className="text-[10px] font-mono font-bold text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 px-2 py-1 rounded-lg group-hover/res:bg-[var(--color-secondary)] group-hover/res:text-black transition-all">
-                                            {res.time}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {isWeatherLoading ? (
-                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5 flex items-center justify-center h-20 animate-pulse">
-                            <Loader2 size={20} className="text-[var(--color-primary)] animate-spin opacity-40" />
-                        </div>
-                    ) : weather ? (() => {
-                        const Icon = WEATHER_ICON_MAP[weather.iconCode] || Cloud;
-                        return (
-                            <div className="bg-gradient-to-br from-[var(--color-primary)]/10 to-transparent p-4 rounded-3xl border border-white/5 flex items-center justify-between group hover:from-[var(--color-primary)]/20 transition-all cursor-default relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-1 opacity-10">
-                                    <Icon size={40} className="text-[var(--color-primary)]" />
-                                </div>
-                                <div className="space-y-0.5 relative z-10">
-                                    <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">Current Weather</div>
-                                    <div className="text-base font-black text-white flex items-center gap-2">
-                                        {weather.temp}°C
-                                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter truncate max-w-[80px]">{weather.description}</span>
-                                    </div>
-                                    <div className="text-[8px] text-[var(--color-secondary)] font-black uppercase tracking-[0.2em] mt-0.5 flex items-center gap-1">
-                                        <MapPin size={8} /> {weather.location}
-                                    </div>
-                                </div>
-                                <Icon size={24} className="text-[var(--color-primary)] opacity-40 group-hover:opacity-80 transition-opacity" />
-                            </div>
-                        );
-                    })() : (
-                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5 flex items-center justify-between group transition-all cursor-default relative overflow-hidden">
-                            <div className="space-y-1 relative z-10">
-                                <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">Real-time Weather</div>
-                                <div className="text-xs font-bold text-white/60">
-                                    Set location to see weather
-                                </div>
-                            </div>
-                            <Sun size={24} className="text-white/10" />
-                        </div>
-                    )}
-
-                    <p className="text-[9px] text-white/20 leading-relaxed font-medium italic">
-                        "Travel is the only thing you buy that makes you richer."
-                    </p>
                 </div>
             </aside>
 
@@ -1096,21 +1098,21 @@ export default function Home() {
                             <button
                                 onClick={() => setMapStyle('light')}
                                 className={`p-1.5 rounded-lg transition-all ${mapStyle === 'light' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
-                                title="Positron (Light)"
+                                title="Positron"
                             >
                                 <Sun size={14} />
                             </button>
                             <button
                                 onClick={() => setMapStyle('voyager')}
                                 className={`p-1.5 rounded-lg transition-all ${mapStyle === 'voyager' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
-                                title="Voyager (Colorful)"
+                                title="Voyager"
                             >
                                 <Layers size={14} />
                             </button>
                             <button
                                 onClick={() => setMapStyle('satellite')}
                                 className={`p-1.5 rounded-lg transition-all ${mapStyle === 'satellite' ? 'bg-[var(--color-primary)] text-black shadow-[0_0_15px_rgba(75,142,255,0.4)]' : 'text-white/40 hover:bg-white/5'}`}
-                                title="Satellite (Esri)"
+                                title="Satellite"
                             >
                                 <Globe size={14} />
                             </button>
@@ -1453,11 +1455,11 @@ export default function Home() {
                                                         )}
                                                     </div>
                                                     {places.length > 1 && (
-                                                        <button 
+                                                        <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleRemovePlace(idx);
-                                                            }} 
+                                                            }}
                                                             className="text-[var(--color-outline)] hover:text-[var(--color-error)] transition-colors p-1"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>

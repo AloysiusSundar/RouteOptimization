@@ -107,16 +107,16 @@ export default function MapComponent({
     <div className={`h-full w-full rounded-2xl overflow-hidden shadow-2xl z-0 relative ${mapMode === 'pin' ? 'cursor-crosshair' : ''}`}>
       <style dangerouslySetInnerHTML={{ __html: `
         .number-icon {
-          background: var(--color-primary);
-          color: var(--color-on-primary-container);
-          border: 2px solid var(--color-background);
+          background: ${mapStyle === 'satellite' ? '#1d4ed8' : 'var(--color-primary)'};
+          color: ${mapStyle === 'satellite' ? 'white' : 'var(--color-on-primary-container)'};
+          border: 2px solid white;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 800;
           font-size: 12px;
-          box-shadow: 0 0 15px var(--color-primary);
+          box-shadow: 0 0 15px ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.5)' : 'var(--color-primary)'};
         }
         .hotel-icon {
           background: transparent;
@@ -126,16 +126,17 @@ export default function MapComponent({
           justify-content: center;
           font-weight: 900;
           font-size: 24px;
-          filter: drop-shadow(0 0 2px rgba(250, 204, 21, 0.4));
+          filter: drop-shadow(0 0 4px white);
         }
         .leaflet-tooltip-tripit {
-          background: var(--color-surface-container-high) !important;
-          border: 1px solid var(--color-outline-variant) !important;
-          color: var(--color-on-surface) !important;
+          background: ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.9)' : 'var(--color-surface-container-high)'} !important;
+          border: 1px solid ${mapStyle === 'satellite' ? 'rgba(255,255,255,0.2)' : 'var(--color-outline-variant)'} !important;
+          color: white !important;
           padding: 12px !important;
           border-radius: 12px !important;
-          box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5) !important;
+          box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.7) !important;
           font-family: var(--font-body) !important;
+          backdrop-filter: blur(8px);
         }
         .leaflet-tooltip-tripit:before {
           border-top-color: var(--color-surface-container-high) !important;
@@ -287,6 +288,7 @@ export default function MapComponent({
                 Invisible, 24px wide, handles ALL mouse logic.
               */}
               <Polyline 
+                key={`buffer-${idx}-${mapStyle}`}
                 positions={segment.positions} 
                 eventHandlers={{
                   mouseover: () => setHoveredIndex(idx),
@@ -346,20 +348,37 @@ export default function MapComponent({
                    </Tooltip>
                  )}
               </Polyline>
-              {/* THE BASE LINE (Visual only) */}
-              <Polyline 
-                positions={segment.positions} 
-                interactive={false}
-                pathOptions={{ 
-                  color: '#4b8eff', 
-                  weight: 4, 
-                  opacity: hoveredIndex !== null && hoveredIndex !== idx ? 0.2 : 0.6,
-                  lineCap: 'round'
-                }}
-              />
+
+               {/* THE HALO LAYER (Finalized for Satellite) */}
+               {mapStyle === 'satellite' && (
+                 <Polyline 
+                   key={`halo-${idx}-${mapStyle}`}
+                   positions={segment.positions} 
+                   interactive={false}
+                   pathOptions={{ 
+                     color: 'white', 
+                     weight: 8, 
+                     opacity: 0.8,
+                     lineCap: 'round'
+                   }}
+                 />
+               )}
+
+               {/* THE BASE LINE (Visual only) */}
+               <Polyline 
+                 key={`base-${idx}-${mapStyle}`}
+                 positions={segment.positions} 
+                 interactive={false}
+                 pathOptions={{ 
+                   color: mapStyle === 'satellite' ? '#1d4ed8' : '#4b8eff', 
+                   weight: mapStyle === 'satellite' ? 5 : 4, 
+                   opacity: hoveredIndex !== null && hoveredIndex !== idx ? (mapStyle === 'satellite' ? 0.3 : 0.2) : 1,
+                   lineCap: 'round'
+                 }}
+               />
             </Fragment>
           ))
-        ), [segments, hoveredIndex])}
+        ), [segments, hoveredIndex, mapStyle])}
 
         {/* 2. Active Focus Layer (Visual Overlay - Always on Top) */}
         {hoveredIndex !== null && segments[hoveredIndex] && (() => {
@@ -368,23 +387,25 @@ export default function MapComponent({
              <Fragment key="active-focus-layer">
                {/* Decorative Glow Backdrop (Non-interactive) */}
                <Polyline 
+                 key={`focus-glow-${hoveredIndex}-${mapStyle}`}
                  positions={segment.positions}
                  interactive={false}
                  pathOptions={{ 
-                   color: 'var(--color-primary)', 
-                   weight: 16, 
-                   opacity: 0.25,
+                   color: mapStyle === 'satellite' ? '#1d4ed8' : 'var(--color-primary)', 
+                   weight: mapStyle === 'satellite' ? 18 : 16, 
+                   opacity: mapStyle === 'satellite' ? 0.4 : 0.25,
                    lineCap: 'round'
                  }} 
                />
                
                {/* Main Focus Line (Non-interactive) */}
                <Polyline 
+                 key={`focus-main-${hoveredIndex}-${mapStyle}`}
                  positions={segment.positions} 
                  interactive={false}
                  pathOptions={{ 
-                   color: 'var(--color-secondary)', 
-                   weight: 6, 
+                   color: mapStyle === 'satellite' ? 'white' : 'var(--color-secondary)', 
+                   weight: mapStyle === 'satellite' ? 7 : 6, 
                    opacity: 1,
                    lineCap: 'round',
                    dashArray: '10 10',
