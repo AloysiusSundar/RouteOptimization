@@ -1,4 +1,4 @@
-const TOMTOM_API_KEY = 't05DnwEPcciD5fDzEOSqAoTsctIHFFdt';
+const TOMTOM_API_KEY = '';
 
 async function testTraffic(origin, destination) {
     const url = `https://api.tomtom.com/routing/1/calculateRoute/${origin}/${destination}/json?key=${TOMTOM_API_KEY}&traffic=true&travelMode=car&departAt=now`;
