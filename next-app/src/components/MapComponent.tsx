@@ -107,8 +107,8 @@ export default function MapComponent({
     <div className={`h-full w-full rounded-2xl overflow-hidden shadow-2xl z-0 relative ${mapMode === 'pin' ? 'cursor-crosshair' : ''}`}>
       <style dangerouslySetInnerHTML={{ __html: `
         .number-icon {
-          background: ${mapStyle === 'satellite' ? '#1d4ed8' : 'var(--color-primary)'};
-          color: ${mapStyle === 'satellite' ? 'white' : 'var(--color-on-primary-container)'};
+          background: ${mapStyle === 'satellite' ? 'var(--color-map-pin-satellite)' : 'var(--color-map-pin)'};
+          color: white;
           border: 2px solid white;
           border-radius: 50%;
           display: flex;
@@ -116,21 +116,21 @@ export default function MapComponent({
           justify-content: center;
           font-weight: 800;
           font-size: 12px;
-          box-shadow: 0 0 15px ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.5)' : 'var(--color-primary)'};
+          box-shadow: 0 0 15px ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.5)' : 'var(--color-map-pin)'};
         }
         .hotel-icon {
-          background: ${mapStyle === 'satellite' ? '#10b981' : 'var(--color-secondary)'};
+          background: var(--color-map-stay);
           color: black;
           border: 2px solid white;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 0 15px ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.5)' : 'var(--color-secondary)'};
+          box-shadow: 0 0 15px ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.5)' : 'var(--color-map-stay)'};
         }
         .leaflet-tooltip-tripit {
-          background: ${mapStyle === 'satellite' ? 'rgba(0,0,0,0.9)' : 'var(--color-surface-container-high)'} !important;
-          border: 1px solid ${mapStyle === 'satellite' ? 'rgba(255,255,255,0.2)' : 'var(--color-outline-variant)'} !important;
+          background: ${mapStyle === 'satellite' ? 'var(--color-map-tooltip-bg-satellite)' : 'var(--color-map-tooltip-bg)'} !important;
+          border: 1px solid ${mapStyle === 'satellite' ? 'var(--color-map-tooltip-border-satellite)' : 'var(--color-map-tooltip-border)'} !important;
           color: white !important;
           padding: 12px !important;
           border-radius: 12px !important;
@@ -139,7 +139,7 @@ export default function MapComponent({
           backdrop-filter: blur(8px);
         }
         .leaflet-tooltip-tripit:before {
-          border-top-color: var(--color-surface-container-high) !important;
+          border-top-color: ${mapStyle === 'satellite' ? 'var(--color-map-tooltip-bg-satellite)' : 'var(--color-map-tooltip-bg)'} !important;
         }
         @keyframes routeFlow {
           from { stroke-dashoffset: 20; }
@@ -308,10 +308,10 @@ export default function MapComponent({
                        {/* Header: Drive Time (Precision Alignment) */}
                        <div className="flex items-baseline justify-between w-full">
                          <div className="flex items-center gap-1.5 min-w-0">
-                           <Activity size={10} className="text-[var(--color-secondary)] shrink-0 translate-y-[-1px]" />
+                           <Activity size={10} className="text-[var(--color-map-pin-secondary)] shrink-0 translate-y-[-1px]" />
                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 truncate">Drive Time</span>
                          </div>
-                         <span className="text-sm font-black text-[var(--color-primary)] ml-4 tabular-nums">{segment.travelMinutes.toFixed(1)}m</span>
+                         <span className="text-sm font-black text-[var(--color-map-route)] ml-4 tabular-nums">{segment.travelMinutes.toFixed(1)}m</span>
                        </div>
                        
                        <div className="h-px bg-white/5 w-full"></div>
@@ -370,7 +370,7 @@ export default function MapComponent({
                  positions={segment.positions} 
                  interactive={false}
                  pathOptions={{ 
-                   color: mapStyle === 'satellite' ? '#1d4ed8' : '#4b8eff', 
+                   color: mapStyle === 'satellite' ? 'var(--color-map-route-satellite)' : 'var(--color-map-route)', 
                    weight: mapStyle === 'satellite' ? 5 : 4, 
                    opacity: hoveredIndex !== null && hoveredIndex !== idx ? (mapStyle === 'satellite' ? 0.3 : 0.2) : 1,
                    lineCap: 'round'
@@ -391,7 +391,7 @@ export default function MapComponent({
                  positions={segment.positions}
                  interactive={false}
                  pathOptions={{ 
-                   color: mapStyle === 'satellite' ? '#1d4ed8' : 'var(--color-primary)', 
+                   color: mapStyle === 'satellite' ? 'var(--color-map-route-satellite)' : 'var(--color-map-route)', 
                    weight: mapStyle === 'satellite' ? 18 : 16, 
                    opacity: mapStyle === 'satellite' ? 0.4 : 0.25,
                    lineCap: 'round'
@@ -404,7 +404,7 @@ export default function MapComponent({
                  positions={segment.positions} 
                  interactive={false}
                  pathOptions={{ 
-                   color: mapStyle === 'satellite' ? 'white' : 'var(--color-secondary)', 
+                   color: mapStyle === 'satellite' ? 'white' : 'var(--color-map-pin-secondary)', 
                    weight: mapStyle === 'satellite' ? 7 : 6, 
                    opacity: 1,
                    lineCap: 'round',

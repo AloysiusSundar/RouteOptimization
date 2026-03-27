@@ -1286,9 +1286,9 @@ export default function Home() {
                                                         <button
                                                             key={sIdx}
                                                             onClick={() => handleSelectBaseCitySuggestion(s)}
-                                                            className="w-full text-left p-3 hover:bg-[var(--color-primary)]/10 border-b border-white/5 last:border-none transition-colors group"
+                                                            className="w-full text-left p-3 hover:bg-[var(--color-legacy-blue)]/10 border-b border-white/5 last:border-none transition-colors group"
                                                         >
-                                                            <div className="text-sm font-bold text-white group-hover:text-[var(--color-primary)]">{s.name}</div>
+                                                            <div className="text-sm font-bold text-white group-hover:text-[var(--color-legacy-blue)]">{s.name}</div>
                                                             <div className="text-[10px] text-gray-400 truncate">{s.label}</div>
                                                         </button>
                                                     ))}
@@ -1319,9 +1319,9 @@ export default function Home() {
                                                         <button
                                                             key={sIdx}
                                                             onClick={() => handleSelectStaySuggestion(s)}
-                                                            className="w-full text-left p-3 hover:bg-[var(--color-primary)]/10 border-b border-white/5 last:border-none transition-colors group"
+                                                            className="w-full text-left p-3 hover:bg-[var(--color-legacy-blue)]/10 border-b border-white/5 last:border-none transition-colors group"
                                                         >
-                                                            <div className="text-sm font-bold text-white group-hover:text-[var(--color-primary)]">{s.name}</div>
+                                                            <div className="text-sm font-bold text-white group-hover:text-[var(--color-legacy-blue)]">{s.name}</div>
                                                             <div className="text-[10px] text-gray-400 truncate">{s.label}</div>
                                                         </button>
                                                     ))}
@@ -1445,9 +1445,9 @@ export default function Home() {
                                                                     <button
                                                                         key={sIdx}
                                                                         onClick={() => handleSelectSuggestion(idx, s)}
-                                                                        className="w-full text-left p-3 hover:bg-[var(--color-primary)]/10 border-b border-white/5 last:border-none transition-colors group"
+                                                                        className="w-full text-left p-3 hover:bg-[var(--color-legacy-blue)]/10 border-b border-white/5 last:border-none transition-colors group"
                                                                     >
-                                                                        <div className="text-sm font-bold text-white group-hover:text-[var(--color-primary)]">{s.name}</div>
+                                                                        <div className="text-sm font-bold text-white group-hover:text-[var(--color-legacy-blue)]">{s.name}</div>
                                                                         <div className="text-[10px] text-gray-400 truncate">{s.label}</div>
                                                                     </button>
                                                                 ))}
@@ -1557,7 +1557,7 @@ export default function Home() {
                                                 <div
                                                     key={poi.id}
                                                     onClick={() => setSelectedEnrichment(poi)}
-                                                    className={`group relative bg-white/5 rounded-2xl border transition-all cursor-pointer overflow-hidden ${selectedEnrichment?.id === poi.id ? 'border-[var(--color-planner-green)] bg-white/10 shadow-[0_0_20px_rgba(83,225,111,0.1)]' : 'border-white/10 hover:border-[var(--color-primary)]/50 hover:bg-white/10'}`}
+                                                    className={`group relative bg-white/5 rounded-2xl border transition-all cursor-pointer overflow-hidden ${selectedEnrichment?.id === poi.id ? 'border-[var(--color-planner-green)] bg-white/10 shadow-[0_0_20px_rgba(83,225,111,0.1)]' : 'border-white/10 hover:border-[var(--color-legacy-blue)]/50 hover:bg-[var(--color-legacy-blue)]/5'}`}
                                                 >
                                                     {poi.photo && (
                                                         <div className="h-28 w-full overflow-hidden">
@@ -1571,7 +1571,7 @@ export default function Home() {
                                                     )}
                                                     <div className="p-4">
                                                         <div className="flex justify-between items-start gap-2 mb-2">
-                                                            <h4 className="text-sm font-bold text-white group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">{poi.name}</h4>
+                                                            <h4 className="text-sm font-bold text-white group-hover:text-[var(--color-legacy-blue)] transition-colors line-clamp-1">{poi.name}</h4>
                                                             {poi.opening_hours && (
                                                                 <div className="shrink-0 flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded-md border border-white/5">
                                                                     <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-planner-green)] animate-pulse" />
@@ -1652,13 +1652,13 @@ export default function Home() {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => schedule && exportToCsv(schedule)}
-                                                className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-xl hover:bg-[var(--color-primary)] hover:text-black transition-all shadow-lg active:scale-95"
+                                                className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-xl hover:bg-[var(--color-legacy-blue)] hover:text-black transition-all shadow-lg active:scale-95"
                                             >
                                                 CSV
                                             </button>
                                             <button
                                                 onClick={() => schedule && exportToIcal(schedule)}
-                                                className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-xl hover:bg-[var(--color-secondary)] hover:text-black transition-all shadow-lg active:scale-95"
+                                                className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-xl hover:bg-[var(--color-legacy-blue)] hover:text-black transition-all shadow-lg active:scale-95"
                                             >
                                                 ICAL
                                             </button>
@@ -1691,13 +1691,13 @@ export default function Home() {
                                                                 onClick={() => handleSpotlight(stop.place, stop.latlon[0], stop.latlon[1])}
                                                                 className="relative group hover:-translate-y-1 transition-transform cursor-pointer"
                                                             >
-                                                                <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-[var(--color-primary)] border-2 border-[var(--color-background)] shadow-[0_0_8px_var(--color-primary)] group-hover:bg-[var(--color-secondary)] transition-colors" />
-                                                                <div className="bg-[var(--color-surface-container-low)] p-4 rounded-xl border border-[var(--color-outline-variant)]/10 group-hover:border-[var(--color-primary)]/40 transition-colors">
+                                                                <div className="absolute -left-[29px] top-1 w-3 h-3 rounded-full bg-[var(--color-primary)] border-2 border-[var(--color-background)] shadow-[0_0_8px_var(--color-primary)] group-hover:bg-[var(--color-legacy-blue)] transition-colors" />
+                                                                <div className="bg-[var(--color-surface-container-low)] p-4 rounded-xl border border-[var(--color-outline-variant)]/10 group-hover:border-[var(--color-legacy-blue)]/40 transition-colors">
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <div className="flex flex-col gap-0.5">
                                                                             <div className="flex items-center gap-2">
-                                                                                <h4 className="text-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-primary-fixed-dim)] transition-colors line-clamp-1">
-                                                                                    {isHotel ? <HomeIcon size={14} className="text-white group-hover:text-[var(--color-primary)] transition-colors translate-y-[-1px]" /> : `${realStopCounter}.`} {stop.place}
+                                                                                <h4 className="text-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-legacy-blue)] transition-colors line-clamp-1">
+                                                                                    {isHotel ? <HomeIcon size={14} className="text-white group-hover:text-[var(--color-legacy-blue)] transition-colors translate-y-[-1px]" /> : `${realStopCounter}.`} {stop.place}
                                                                                 </h4>
                                                                                 {stop.isReservation && (
                                                                                     <div className="px-1.5 py-0.5 rounded-md bg-[var(--color-secondary)]/10 border border-[var(--color-secondary)]/20 text-[var(--color-secondary)]" title="Fixed Reservation">

@@ -17,7 +17,7 @@
   --color-surface-container-highest: #353534;
   --color-tertiary-container: #ef6719;
   --color-on-primary-fixed: #001a41;
-  --color-primary-container: #4b8eff;
+  --color-primary-container: #ebffe2;
   --color-on-tertiary-container: #4c1a00;
   --color-error: #ffb4ab;
   --color-secondary-fixed: #72fe88;
@@ -39,9 +39,9 @@
   --color-on-error-container: #ffdad6;
   --color-tertiary-fixed-dim: #ffb595;
   --color-surface-variant: #353534;
-  --color-secondary: #bbc6e4;
-  --color-primary: #adc6ff;
-  --color-secondary-fixed-dim: #bbc6e4;
+  --color-secondary: #ebffe2;
+  --color-primary: #ebffe2;
+  --color-secondary-fixed-dim: #ebffe2;
   --color-on-primary-container: #00285c;
   --color-primary-fixed: #d8e2ff;
   --color-surface-tint: #adc6ff;
@@ -57,6 +57,20 @@
   --color-zen-surface: #131313;
   --color-zen-surface-low: #0e0e0e;
   --color-planner-green: #53e16f;
+  --color-legacy-blue: #4b8eff;
+  
+  /* Map-Specific Aesthetics (Decoupled from UI) */
+  --color-map-route: #4b8eff;
+  --color-map-route-glow: rgba(75, 142, 255, 0.4);
+  --color-map-pin: #4b8eff;
+  --color-map-pin-secondary: #bbc6e4;
+  --color-map-stay: #10b981;
+  --color-map-route-satellite: #1d4ed8;
+  --color-map-pin-satellite: #1d4ed8;
+  --color-map-tooltip-bg: var(--color-surface-container-high);
+  --color-map-tooltip-border: var(--color-outline-variant);
+  --color-map-tooltip-bg-satellite: rgba(0,0,0,0.9);
+  --color-map-tooltip-border-satellite: rgba(255,255,255,0.2);
 
   --font-headline: var(--font-space-mono), monospace;
   --font-body: var(--font-geist-sans), sans-serif;
