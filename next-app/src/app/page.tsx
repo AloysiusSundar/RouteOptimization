@@ -7,11 +7,24 @@ import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } f
 import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
 import { getTomTomDurationsMatrix, getTomTomLegDetails } from '@/lib/tomtomClient';
-import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab, Sun, Moon, Layers } from 'lucide-react';
+import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab, Moon, Layers, CloudFog, CloudDrizzle, CloudRain, CloudLightning, CloudSnow, Wind, Cloud, Sun } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
 import { clusterPlaces } from '@/lib/Clusterer';
 import { exportToCsv, exportToIcal } from '@/lib/ExportUtils';
 import { fetchWikiData, getOpenStatus } from '@/lib/WikiEnricher';
+import { getWeatherData, WeatherData } from '@/lib/weatherClient';
+
+const WEATHER_ICON_MAP: Record<string, any> = {
+    '01': Sun,
+    '02': Cloud,
+    '03': Cloud,
+    '04': Cloud,
+    '09': CloudDrizzle,
+    '10': CloudRain,
+    '11': CloudLightning,
+    '13': CloudSnow,
+    '50': CloudFog,
+};
 
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
 
@@ -28,7 +41,9 @@ interface SavedTrip {
     name: string;
     timestamp: number;
     baseCity: string;
+    baseCityCoords?: [number, number] | null;
     accommodation: string;
+    accommodationCoords?: [number, number] | null;
     startDate: string;
     tripLength: number;
     places: UIPlace[];
@@ -80,6 +95,8 @@ export default function Home() {
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
     const [mapMode, setMapMode] = useState<'drag' | 'pin'>('drag');
     const [mapStyle, setMapStyle] = useState<'dark' | 'light' | 'voyager'>('dark');
+    const [weather, setWeather] = useState<WeatherData | null>(null);
+    const [isWeatherLoading, setIsWeatherLoading] = useState(false);
 
     // Load Saved Trips on Mount
     useEffect(() => {
@@ -97,6 +114,24 @@ export default function Home() {
     useEffect(() => {
         localStorage.setItem('tripit_saved_trips', JSON.stringify(savedTrips));
     }, [savedTrips]);
+
+    // V9.0: Real-time Weather Integration
+    useEffect(() => {
+        const fetchWeather = async () => {
+            const targetCoords = accommodationCoords || baseCityCoords;
+            if (!targetCoords) {
+                setWeather(null);
+                return;
+            }
+
+            setIsWeatherLoading(true);
+            const data = await getWeatherData(targetCoords[0], targetCoords[1]);
+            setWeather(data);
+            setIsWeatherLoading(false);
+        };
+
+        fetchWeather();
+    }, [accommodationCoords, baseCityCoords]);
 
     const handleMapClick = (lat: number, lng: number) => {
         const newPlace: UIPlace = {
@@ -544,6 +579,7 @@ export default function Home() {
 
         const reservationDetails = isAll
             ? places.filter(p => p.is_reservation).map(p => ({
+                id: p.id,
                 name: p.name,
                 date: p.reservation_date,
                 time: p.reservation_clock,
@@ -652,7 +688,9 @@ export default function Home() {
             name: saveName,
             timestamp: Date.now(),
             baseCity,
+            baseCityCoords,
             accommodation,
+            accommodationCoords,
             startDate: startDate.toString(),
             tripLength,
             places,
@@ -666,7 +704,9 @@ export default function Home() {
 
     const handleLoadTrip = (trip: SavedTrip) => {
         setBaseCity(trip.baseCity);
+        setBaseCityCoords(trip.baseCityCoords || null);
         setAccommodation(trip.accommodation);
+        setAccommodationCoords(trip.accommodationCoords || null);
         setStartDate(trip.startDate);
         setTripLength(trip.tripLength);
         setPlaces(trip.places);
@@ -685,7 +725,9 @@ export default function Home() {
 
     const handleClearAll = () => {
         setBaseCity('');
+        setBaseCityCoords(null);
         setAccommodation('');
+        setAccommodationCoords(null);
         setStartDate(new Date().toISOString().split('T')[0]);
         setTripLength(1);
         setTransportMode('driving-car');
@@ -917,22 +959,41 @@ export default function Home() {
                         </div>
                     )}
 
-                    <div className="bg-gradient-to-br from-[var(--color-primary)]/10 to-transparent p-4 rounded-3xl border border-white/5 flex items-center justify-between group hover:from-[var(--color-primary)]/20 transition-all cursor-default relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-1 opacity-10">
-                            <Sparkles size={40} className="text-[var(--color-primary)]" />
+                    {isWeatherLoading ? (
+                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5 flex items-center justify-center h-20 animate-pulse">
+                            <Loader2 size={20} className="text-[var(--color-primary)] animate-spin opacity-40" />
                         </div>
-                        <div className="space-y-1 relative z-10">
-                            <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">{selectedDay === 'all' ? 'Trip Pace' : `Day ${selectedDay as number + 1} Focus`}</div>
-                            <div className="text-sm font-bold text-white flex items-center gap-2">
-                                Steady Explorer
-                                <Sparkles size={12} className="text-[var(--color-primary)] animate-pulse" />
+                    ) : weather ? (() => {
+                        const Icon = WEATHER_ICON_MAP[weather.iconCode] || Cloud;
+                        return (
+                            <div className="bg-gradient-to-br from-[var(--color-primary)]/10 to-transparent p-4 rounded-3xl border border-white/5 flex items-center justify-between group hover:from-[var(--color-primary)]/20 transition-all cursor-default relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-1 opacity-10">
+                                    <Icon size={40} className="text-[var(--color-primary)]" />
+                                </div>
+                                <div className="space-y-0.5 relative z-10">
+                                    <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">Current Weather</div>
+                                    <div className="text-base font-black text-white flex items-center gap-2">
+                                        {weather.temp}°C
+                                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter truncate max-w-[80px]">{weather.description}</span>
+                                    </div>
+                                    <div className="text-[8px] text-[var(--color-secondary)] font-black uppercase tracking-[0.2em] mt-0.5 flex items-center gap-1">
+                                        <MapPin size={8} /> {weather.location}
+                                    </div>
+                                </div>
+                                <Icon size={24} className="text-[var(--color-primary)] opacity-40 group-hover:opacity-80 transition-opacity" />
                             </div>
-                            <div className="text-[8px] text-[var(--color-secondary)] font-black uppercase tracking-[0.2em] mt-0.5 flex items-center gap-1">
-                                <Activity size={8} /> Traffic-Proven
+                        );
+                    })() : (
+                        <div className="bg-white/5 p-4 rounded-3xl border border-white/5 flex items-center justify-between group transition-all cursor-default relative overflow-hidden">
+                            <div className="space-y-1 relative z-10">
+                                <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">Real-time Weather</div>
+                                <div className="text-xs font-bold text-white/60">
+                                    Set location to see weather
+                                </div>
                             </div>
+                            <Sun size={24} className="text-white/10" />
                         </div>
-                        <Activity size={24} className="text-[var(--color-primary)] opacity-40 group-hover:opacity-80 transition-opacity" />
-                    </div>
+                    )}
 
                     <p className="text-[9px] text-white/20 leading-relaxed font-medium italic">
                         "Travel is the only thing you buy that makes you richer."
@@ -1094,6 +1155,7 @@ export default function Home() {
                         routeGeoJson={routeGeoJson[selectedDay.toString()]}
                         schedule={
                             (schedule || places.filter(p => p.coords).map(p => ({
+                                id: p.id,
                                 place: p.name,
                                 latlon: p.coords!,
                                 arrival: new Date(),
@@ -1112,6 +1174,8 @@ export default function Home() {
                         mapMode={mapMode}
                         mapStyle={mapStyle}
                         onMapClick={handleMapClick}
+                        accommodationCoords={accommodationCoords}
+                        accommodationName={accommodation}
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)] via-transparent to-transparent pointer-events-none"></div>
                 </div>

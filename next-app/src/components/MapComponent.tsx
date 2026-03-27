@@ -44,6 +44,8 @@ interface MapProps {
     mapMode?: 'drag' | 'pin';
     onMapClick?: (lat: number, lng: number) => void;
     mapStyle?: 'dark' | 'light' | 'voyager';
+    accommodationCoords?: [number, number] | null;
+    accommodationName?: string;
 }
 
 export default function MapComponent({ 
@@ -53,16 +55,22 @@ export default function MapComponent({
   onMarkerClick, 
   mapMode = 'drag', 
   onMapClick,
-  mapStyle = 'dark' 
+  mapStyle = 'dark',
+  accommodationCoords,
+  accommodationName
 }: MapProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const defaultCenter: [number, number] = [40.7128, -74.0060]; // NYC default
   
   const { center, zoom } = useMemo(() => {
-    const c = coords.length > 0 ? coords[coords.length - 1] : defaultCenter;
-    const z = coords.length > 0 ? 14 : 3;
-    return { center: c, zoom: z };
-  }, [coords]);
+    if (coords.length > 0) {
+      return { center: coords[coords.length - 1], zoom: 14 };
+    }
+    if (accommodationCoords) {
+      return { center: accommodationCoords, zoom: 14 };
+    }
+    return { center: defaultCenter, zoom: 3 };
+  }, [coords, accommodationCoords]);
 
   const segments = useMemo(() => {
     if (!routeGeoJson || !routeGeoJson.features || routeGeoJson.features.length === 0) return [];
@@ -171,9 +179,13 @@ export default function MapComponent({
           return coords.map((coord, i) => {
             const stop = schedule?.[i];
             const isHotel = stop?.place.toLowerCase().includes('stay location');
-            if (!isHotel) realStopIndex++;
             
-            const displayLabel = isHotel ? '🏨' : realStopIndex.toString();
+            // If it's the stay location, we skip rendering here to let the dedicated marker handle it
+            // This prevents double markers when schedule is active
+            if (isHotel) return null;
+            
+            realStopIndex++;
+            const displayLabel = realStopIndex.toString();
             
             const icon = L.divIcon({
               className: isHotel ? 'hotel-icon' : 'number-icon',
@@ -217,6 +229,48 @@ export default function MapComponent({
             );
           });
         }, [coords, schedule, onMarkerClick])}
+        
+        {/* Dedicated Stay Location Marker (Always visible if coords exist) */}
+        {useMemo(() => {
+          if (!accommodationCoords) return null;
+          
+          // Try to find more details from the schedule if it exists
+          const scheduleStop = schedule?.find(s => s.place.toLowerCase().includes('stay location'));
+
+          return (
+            <Marker 
+              position={accommodationCoords} 
+              icon={L.divIcon({
+                className: 'hotel-icon',
+                html: `<span>🏨</span>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+              })}
+            >
+              <Popup>
+                <div className="text-gray-900 font-semibold p-1">
+                  🏠 Stay: {accommodationName || 'Stay Location'}
+                  {scheduleStop && <div className="text-[10px] text-gray-500 font-normal mt-1">Active for this trip</div>}
+                </div>
+              </Popup>
+              <Tooltip direction="top" offset={[0, -10]} opacity={1} className="leaflet-tooltip-tripit">
+                <div className="flex flex-col gap-1 min-w-[140px]">
+                  <div className="text-[10px] uppercase tracking-widest text-yellow-500 font-bold">Stay Location</div>
+                  <div className="text-sm font-bold text-white">{accommodationName || 'Your Accommodation'}</div>
+                  {scheduleStop && (
+                    <>
+                      <div className="h-px bg-white/10 my-1"></div>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-300">
+                        <Activity size={10} />
+                        Trip Base / Anchor
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Tooltip>
+            </Marker>
+          );
+        }, [accommodationCoords, accommodationName, schedule])}
 
         {/* 1. Base Route Layer (Memoized) */}
         {useMemo(() => (
