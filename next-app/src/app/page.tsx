@@ -743,7 +743,7 @@ export default function Home() {
     return (
         <div className="flex overflow-hidden h-screen bg-[var(--color-surface)] text-[var(--color-on-surface)] font-body">
             {/* SideNavBar Shell */}
-            <aside className="h-screen w-72 fixed left-0 top-0 border-r border-[var(--color-outline-variant)]/15 bg-[var(--color-surface-container-lowest)]/70 backdrop-blur-lg shadow-[40px_0_60px_-10px_rgba(0,68,147,0.08)] flex flex-col z-50">
+            <aside className="h-screen w-72 fixed left-0 top-0 border-r border-[var(--color-outline-variant)]/15 bg-[var(--color-surface-container-lowest)]/70 backdrop-blur-lg flex flex-col z-50">
                 <div className="px-6 pt-8 mb-10 shrink-0">
                     <h1 className="text-xl font-bold tracking-tighter text-[var(--color-on-surface)] font-headline">Yathir.ai</h1>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-secondary)] font-semibold mt-1">AI Concierge</p>
@@ -1049,90 +1049,88 @@ export default function Home() {
             <main className="ml-72 flex-1 relative h-screen w-full bg-[var(--color-surface-container-lowest)]">
 
                 {/* Top Navigation */}
-                <header className="fixed top-0 right-0 left-72 h-16 z-40 bg-[var(--color-background)] border-b border-white/5 flex items-center justify-between px-8">
-                    <div className="flex items-center gap-8">
-                        <a
-                            className={`${!isMyTripsOpen ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]'} pb-1 text-sm font-medium transition-all`}
-                            href="#"
-                            onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(false); }}
-                        >
-                            Planner
-                        </a>
-                        <a
-                            className={`${isMyTripsOpen ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]'} pb-1 text-sm font-medium transition-all`}
-                            href="#"
-                            onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(true); }}
-                        >
-                            Saved Trips
-                        </a>
-                    </div>
+                {/* Floating Navigation Pill (Left) */}
+                <div className="fixed top-6 left-80 z-40 flex items-center gap-1.5 p-1.5 backdrop-blur-2xl bg-black/40 border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-500">
+                    <button
+                        onClick={() => setIsMyTripsOpen(false)}
+                        className={`px-7 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${!isMyTripsOpen ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                    >
+                        Planner
+                    </button>
+                    <button
+                        onClick={() => setIsMyTripsOpen(true)}
+                        className={`px-7 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${isMyTripsOpen ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                    >
+                        Saved Trips
+                    </button>
+                </div>
 
-                    {/* Centered Map Mode Toolbar */}
-                    <div className="absolute left-1/2 -translate-x-1/2 flex items-center bg-[var(--color-surface-container-low)] rounded-xl p-1 border border-white/10 shadow-lg">
+                {/* Floating Map Mode Pill (Center) */}
+                <div className="fixed top-6 left-[calc(50%+9rem)] -translate-x-1/2 z-40 flex items-center gap-1.5 p-1.5 backdrop-blur-2xl bg-black/40 border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
+                    <button
+                        onClick={() => setMapMode('drag')}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${mapMode === 'drag' ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        title="Pan and Zoom"
+                    >
+                        <Grab size={16} /> Drag
+                    </button>
+                    <button
+                        onClick={() => setMapMode('pin')}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${mapMode === 'pin' ? 'bg-[var(--color-secondary)] text-black shadow-lg shadow-[var(--color-secondary)]/30' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        title="Drop Pin to Add Location"
+                    >
+                        <MapPin size={16} /> Pin
+                    </button>
+                </div>
+
+                {/* Floating System Pill (Right) */}
+                <div className="fixed top-6 right-10 z-40 flex items-center gap-5 p-1.5 backdrop-blur-2xl bg-black/40 border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-500 delay-200">
+                    <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/5">
                         <button
-                            onClick={() => setMapMode('drag')}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${mapMode === 'drag' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
-                            title="Pan and Zoom"
+                            onClick={() => setMapStyle('dark')}
+                            className={`p-2.5 rounded-lg transition-all ${mapStyle === 'dark' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            title="Dark Matter"
                         >
-                            <Grab size={14} /> Drag
+                            <Moon size={16} />
                         </button>
                         <button
-                            onClick={() => setMapMode('pin')}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${mapMode === 'pin' ? 'bg-[var(--color-secondary)] text-black shadow-[0_0_15px_rgba(83,225,111,0.3)]' : 'text-white/40 hover:bg-white/5'}`}
-                            title="Drop Pin to Add Location"
+                            onClick={() => setMapStyle('light')}
+                            className={`p-2.5 rounded-lg transition-all ${mapStyle === 'light' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            title="Positron"
                         >
-                            <MapPin size={14} /> Pin
+                            <Sun size={16} />
                         </button>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        {/* Map Style Switcher */}
-                        <div className="flex items-center bg-[var(--color-surface-container-low)] rounded-xl p-0.5 border border-white/10 shadow-lg">
-                            <button
-                                onClick={() => setMapStyle('dark')}
-                                className={`p-1.5 rounded-lg transition-all ${mapStyle === 'dark' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
-                                title="Dark Matter"
-                            >
-                                <Moon size={14} />
-                            </button>
-                            <button
-                                onClick={() => setMapStyle('light')}
-                                className={`p-1.5 rounded-lg transition-all ${mapStyle === 'light' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
-                                title="Positron"
-                            >
-                                <Sun size={14} />
-                            </button>
-                            <button
-                                onClick={() => setMapStyle('voyager')}
-                                className={`p-1.5 rounded-lg transition-all ${mapStyle === 'voyager' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:bg-white/5'}`}
-                                title="Voyager"
-                            >
-                                <Layers size={14} />
-                            </button>
-                            <button
-                                onClick={() => setMapStyle('satellite')}
-                                className={`p-1.5 rounded-lg transition-all ${mapStyle === 'satellite' ? 'bg-[var(--color-primary)] text-black shadow-[0_0_15px_rgba(75,142,255,0.4)]' : 'text-white/40 hover:bg-white/5'}`}
-                                title="Satellite"
-                            >
-                                <Globe size={14} />
-                            </button>
-                        </div>
-
                         <button
-                            onClick={() => setIsSaveModalOpen(true)}
-                            className="flex items-center gap-2 bg-[var(--color-secondary)] text-black px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
+                            onClick={() => setMapStyle('voyager')}
+                            className={`p-2.5 rounded-lg transition-all ${mapStyle === 'voyager' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            title="Voyager"
                         >
-                            <Save size={14} /> Save Trip
+                            <Layers size={16} />
+                        </button>
+                        <button
+                            onClick={() => setMapStyle('satellite')}
+                            className={`p-2.5 rounded-lg transition-all ${mapStyle === 'satellite' ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/30' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            title="Satellite"
+                        >
+                            <Globe size={16} />
                         </button>
                     </div>
-                </header>
+
+                    <button
+                        onClick={() => setIsSaveModalOpen(true)}
+                        className="flex items-center gap-2 bg-[var(--color-secondary)] text-black px-6 py-3 rounded-xl text-[12px] font-extrabold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--color-secondary)]/20"
+                    >
+                        <Save size={16} /> Save
+                    </button>
+                </div>
+
 
                 {/* Day Navigation Bar (V4.4) */}
                 {schedule && schedule.length > 0 && (
-                    <div className="fixed top-20 left-[calc(50%+9rem)] -translate-x-1/2 z-[45] flex items-center gap-2 p-1.5 bg-[var(--color-surface-container-low)]/80 backdrop-blur-2xl rounded-2xl border border-white/5 shadow-2xl animate-in fade-in slide-in-from-top-4">
+                    <div className="fixed top-24 left-[calc(50%+9rem)] -translate-x-1/2 z-[45] flex items-center gap-2 p-1.5 bg-[var(--color-surface-container-low)]/80 backdrop-blur-2xl rounded-2xl border border-white/5 shadow-2xl animate-in fade-in slide-in-from-top-4">
                         <button
                             onClick={() => setSelectedDay('all')}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === 'all' ? 'bg-[var(--color-primary)] text-white shadow-[0_0_15px_var(--color-primary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === 'all' ? 'bg-[var(--color-primary)] text-black shadow-[0_0_15px_var(--color-primary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         >
                             OVERVIEW
                         </button>
@@ -1141,7 +1139,7 @@ export default function Home() {
                             <button
                                 key={i}
                                 onClick={() => setSelectedDay(i)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === i ? 'bg-[var(--color-secondary)] text-white shadow-[0_0_15px_var(--color-secondary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === i ? 'bg-[var(--color-secondary)] text-black shadow-[0_0_15px_var(--color-secondary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                             >
                                 DAY {i + 1}
                             </button>
@@ -1186,7 +1184,6 @@ export default function Home() {
                         accommodationCoords={accommodationCoords}
                         accommodationName={accommodation}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)] via-transparent to-transparent pointer-events-none"></div>
                 </div>
 
                 {/* Configuration Panel (V7.0 Zen Mode) */}
