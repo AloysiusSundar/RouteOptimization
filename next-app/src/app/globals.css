@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-on-secondary: #003911;
+  --color-on-secondary: #ffffff;
   --color-inverse-primary: #005bc1;
   --color-surface-container-lowest: #0e0e0e;
   --color-outline: #8b90a0;
   --color-on-background: #e5e2e1;
   --color-background: #131313;
   --color-primary-fixed-dim: #adc6ff;
-  --color-on-secondary-fixed: #002107;
+  --color-on-secondary-fixed: #001d36;
   --color-tertiary: #ffb595;
-  --color-on-secondary-fixed-variant: #00531c;
+  --color-on-secondary-fixed-variant: #44474e;
   --color-on-error: #690005;
-  --color-secondary-container: #05b046;
+  --color-secondary-container: #3b475f;
   --color-on-primary: #002e69;
   --color-surface-container-highest: #353534;
   --color-tertiary-container: #ef6719;
@@ -27,7 +27,7 @@
   --color-on-tertiary: #571e00;
   --color-on-surface: #e5e2e1;
   --color-surface-container-low: #1c1b1b;
-  --color-on-secondary-container: #003a11;
+  --color-on-secondary-container: #d7e2ff;
   --color-error-container: #93000a;
   --color-on-primary-fixed-variant: #004493;
   --color-surface-container-high: #2a2a2a;
@@ -39,9 +39,9 @@
   --color-on-error-container: #ffdad6;
   --color-tertiary-fixed-dim: #ffb595;
   --color-surface-variant: #353534;
-  --color-secondary: #53e16f;
+  --color-secondary: #bbc6e4;
   --color-primary: #adc6ff;
-  --color-secondary-fixed-dim: #53e16f;
+  --color-secondary-fixed-dim: #bbc6e4;
   --color-on-primary-container: #00285c;
   --color-primary-fixed: #d8e2ff;
   --color-surface-tint: #adc6ff;
@@ -56,6 +56,7 @@
   --color-zen-dark: #3b4b37;
   --color-zen-surface: #131313;
   --color-zen-surface-low: #0e0e0e;
+  --color-planner-green: #53e16f;
 
   --font-headline: var(--font-space-mono), monospace;
   --font-body: var(--font-geist-sans), sans-serif;

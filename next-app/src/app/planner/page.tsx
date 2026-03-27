@@ -762,7 +762,7 @@ export default function Home() {
                             <span className="font-medium text-sm">Itinerary</span>
                         </a>
                         <a
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isMyTripsOpen ? 'bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] border-r-2 border-[var(--color-secondary)]' : 'text-white/40 hover:bg-white/5'}`}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isMyTripsOpen ? 'bg-[#00ff41]/10 text-[#00ff41] border-r-2 border-[#00ff41]' : 'text-white/40 hover:bg-white/5'}`}
                             href="#"
                             onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(true); }}
                         >
@@ -796,7 +796,7 @@ export default function Home() {
                                                     </button>
                                                 </div>
                                                 <div onClick={() => handleLoadTrip(trip)} className="cursor-pointer space-y-2">
-                                                    <h4 className="text-sm font-bold text-white group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">{trip.name}</h4>
+                                                    <h4 className="text-sm font-bold text-[var(--color-zen-neon)] group-hover:text-white transition-colors line-clamp-1">{trip.name}</h4>
                                                     <div className="flex items-center gap-3 text-[9px] font-bold text-white/40 uppercase tracking-widest">
                                                         <span className="flex items-center gap-1"><MapPin size={8} /> {trip.baseCity}</span>
                                                         <span className="flex items-center gap-1"><Calendar size={8} /> {new Date(trip.timestamp).toLocaleDateString()}</span>
@@ -948,13 +948,13 @@ export default function Home() {
                                         <div
                                             key={res.id || `${res.name}-${res.date}-${res.time}`}
                                             onClick={() => res.latlon && handleSpotlight(res.name, res.latlon[0], res.latlon[1])}
-                                            className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center justify-between group/res hover:bg-white/5 hover:border-[var(--color-primary)]/30 hover:-translate-y-0.5 transition-all cursor-pointer shadow-lg active:scale-[0.98]"
+                                            className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center justify-between group/res hover:bg-white/5 hover:border-[var(--color-zen-neon)]/30 hover:-translate-y-0.5 transition-all cursor-pointer shadow-lg active:scale-[0.98]"
                                         >
                                             <div className="space-y-0.5">
-                                                <div className="text-[11px] font-bold text-white group-hover/res:text-[var(--color-primary)] transition-colors line-clamp-1">{res.name}</div>
+                                                <div className="text-[11px] font-bold text-[var(--color-zen-neon)] group-hover/res:text-white transition-colors line-clamp-1">{res.name}</div>
                                                 <div className="text-[9px] text-white/40 uppercase tracking-wider">{res.date}</div>
                                             </div>
-                                            <div className="text-[10px] font-mono font-bold text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 px-2 py-1 rounded-lg group-hover/res:bg-[var(--color-secondary)] group-hover/res:text-black transition-all">
+                                            <div className="text-[10px] font-mono font-bold text-[var(--color-zen-neon)] bg-[var(--color-zen-neon)]/10 px-2 py-1 rounded-lg group-hover/res:bg-[var(--color-zen-neon)] group-hover/res:text-black transition-all">
                                                 {res.time}
                                             </div>
                                         </div>
@@ -1011,8 +1011,8 @@ export default function Home() {
                 <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex items-center justify-center animate-in fade-in duration-300">
                     <div className="bg-[var(--color-surface-container-lowest)] w-full max-w-md p-8 rounded-[2rem] border border-white/10 shadow-2xl space-y-6">
                         <div className="space-y-2 text-center">
-                            <div className="w-16 h-16 bg-[var(--color-secondary)]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Save size={32} className="text-[var(--color-secondary)]" />
+                            <div className="w-16 h-16 bg-[var(--color-zen-neon)]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Save size={32} className="text-[var(--color-zen-neon)]" />
                             </div>
                             <h2 className="text-2xl font-bold tracking-tighter text-white font-headline">Name Your Adventure</h2>
                             <p className="text-sm text-white/40">Give this itinerary a memorable name to find it later.</p>
@@ -1025,7 +1025,7 @@ export default function Home() {
                                 onChange={(e) => setSaveName(e.target.value)}
                                 placeholder="e.g. Autumn in Tokyo 2026"
                                 autoFocus
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)] transition-all text-center text-lg font-medium"
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-zen-neon)] transition-all text-center text-lg font-medium"
                             />
 
                             <div className="grid grid-cols-2 gap-4">
@@ -1038,7 +1038,7 @@ export default function Home() {
                                 <button
                                     onClick={handleSaveTrip}
                                     disabled={!saveName.trim()}
-                                    className="px-6 py-4 rounded-2xl bg-[var(--color-secondary)] text-black font-bold text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                                    className="px-6 py-4 rounded-2xl bg-[var(--color-zen-neon)] text-black font-bold text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                                 >
                                     Store Route
                                 </button>
@@ -1062,7 +1062,7 @@ export default function Home() {
                     </button>
                     <button
                         onClick={() => setIsMyTripsOpen(true)}
-                        className={`px-7 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${isMyTripsOpen ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        className={`px-7 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${isMyTripsOpen ? 'bg-[var(--color-zen-neon)] text-black shadow-lg shadow-[var(--color-zen-neon)]/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                     >
                         Saved Trips
                     </button>
@@ -1079,7 +1079,7 @@ export default function Home() {
                     </button>
                     <button
                         onClick={() => setMapMode('pin')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${mapMode === 'pin' ? 'bg-[var(--color-secondary)] text-black shadow-lg shadow-[var(--color-secondary)]/30' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${mapMode === 'pin' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg shadow-[var(--color-zen-neon)]/30' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Drop Pin to Add Location"
                     >
                         <MapPin size={16} /> Pin
@@ -1121,7 +1121,7 @@ export default function Home() {
 
                     <button
                         onClick={() => setIsSaveModalOpen(true)}
-                        className="flex items-center gap-2 bg-[var(--color-secondary)] text-black px-6 py-3 rounded-xl text-[12px] font-extrabold uppercase tracking-widest border border-transparent hover:bg-black hover:text-[var(--color-secondary)] hover:border-[var(--color-secondary)]/30 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--color-secondary)]/20"
+                        className="flex items-center gap-2 bg-[var(--color-zen-neon)] text-black px-6 py-3 rounded-xl text-[12px] font-extrabold uppercase tracking-widest border border-transparent hover:bg-black hover:text-[var(--color-zen-neon)] hover:border-[var(--color-zen-neon)]/30 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--color-zen-neon)]/20"
                     >
                         <Save size={16} /> Save
                     </button>
@@ -1200,8 +1200,8 @@ export default function Home() {
                                         style={{ marginBottom: 'var(--panel-vertical-rhythm)' }}
                                     >
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-[var(--color-secondary)] shadow-[0_0_8px_rgba(83,225,111,0.6)]"></div>
-                                            <span className="text-[10px] font-bold tracking-[0.1em] text-[var(--color-secondary)] uppercase">Optimization Panel</span>
+                                            <div className="w-2 h-2 rounded-full bg-[var(--color-planner-green)] shadow-[0_0_8px_rgba(83,225,111,0.6)]"></div>
+                                            <span className="text-10px font-bold tracking-[0.1em] text-[var(--color-planner-green)] uppercase">CONFIGURE</span>
                                         </div>
                                         <div
                                             className="flex items-center"
@@ -1296,9 +1296,9 @@ export default function Home() {
                                             )}
                                         </div>
                                         <div className="space-y-1.5 relative">
-                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-secondary)]/70 uppercase ml-1">Stay Location</label>
+                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-planner-green)]/70 uppercase ml-1">Stay Location</label>
                                             <input
-                                                className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-secondary)]/50 focus:ring-4 focus:ring-[var(--color-secondary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10"
+                                                className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-planner-green)]/50 focus:ring-4 focus:ring-[var(--color-planner-green)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10"
                                                 type="text"
                                                 placeholder="e.g. Hilton Shinjuku"
                                                 value={accommodation}
@@ -1342,19 +1342,19 @@ export default function Home() {
                                         <div className="grid grid-cols-3 bg-white/5 rounded-2xl p-1 gap-1 border border-white/10">
                                             <button
                                                 onClick={() => setTransportMode('driving-car')}
-                                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'driving-car' ? 'bg-[var(--color-secondary)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+                                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'driving-car' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
                                             >
                                                 <Car size={14} /> Car
                                             </button>
                                             <button
                                                 onClick={() => setTransportMode('foot-walking')}
-                                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'foot-walking' ? 'bg-[var(--color-secondary)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+                                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'foot-walking' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
                                             >
                                                 <Footprints size={14} /> Walk
                                             </button>
                                             <button
                                                 onClick={() => setTransportMode('cycling-regular')}
-                                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'cycling-regular' ? 'bg-[var(--color-secondary)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+                                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'cycling-regular' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
                                             >
                                                 <Bike size={14} /> Bike
                                             </button>
@@ -1509,12 +1509,12 @@ export default function Home() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center border-b border-white/5 pb-2">
                                         <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase ml-1 flex items-center gap-2">
-                                            <Sparkles size={12} className="text-[var(--color-secondary)]" />
+                                            <Sparkles size={12} className="text-[var(--color-planner-green)]" />
                                             Discover Local Gems
                                         </label>
                                         <button
                                             onClick={handleInspireMe}
-                                            className="text-[var(--color-secondary)] hover:text-white text-[10px] font-bold transition-all flex items-center gap-1 bg-[var(--color-secondary)]/10 px-2 py-1 rounded-md"
+                                            className="text-[var(--color-planner-green)] hover:text-white text-[10px] font-bold transition-all flex items-center gap-1 bg-[var(--color-planner-green)]/10 px-2 py-1 rounded-md"
                                         >
                                             <Sparkle size={10} />
                                             Inspire Me
@@ -1557,7 +1557,7 @@ export default function Home() {
                                                 <div
                                                     key={poi.id}
                                                     onClick={() => setSelectedEnrichment(poi)}
-                                                    className={`group relative bg-white/5 rounded-2xl border transition-all cursor-pointer overflow-hidden ${selectedEnrichment?.id === poi.id ? 'border-[var(--color-secondary)] bg-white/10 shadow-[0_0_20px_rgba(83,225,111,0.1)]' : 'border-white/10 hover:border-[var(--color-primary)]/50 hover:bg-white/10'}`}
+                                                    className={`group relative bg-white/5 rounded-2xl border transition-all cursor-pointer overflow-hidden ${selectedEnrichment?.id === poi.id ? 'border-[var(--color-planner-green)] bg-white/10 shadow-[0_0_20px_rgba(83,225,111,0.1)]' : 'border-white/10 hover:border-[var(--color-primary)]/50 hover:bg-white/10'}`}
                                                 >
                                                     {poi.photo && (
                                                         <div className="h-28 w-full overflow-hidden">
@@ -1574,7 +1574,7 @@ export default function Home() {
                                                             <h4 className="text-sm font-bold text-white group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">{poi.name}</h4>
                                                             {poi.opening_hours && (
                                                                 <div className="shrink-0 flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded-md border border-white/5">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)] animate-pulse" />
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-planner-green)] animate-pulse" />
                                                                     <span className="text-[8px] font-bold text-white/60 truncate max-w-[60px]">{getOpenStatus(poi.opening_hours).message}</span>
                                                                 </div>
                                                             )}
@@ -1620,7 +1620,7 @@ export default function Home() {
                                 className="w-full h-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-[var(--color-secondary)] shadow-[0_0_8px_rgba(83,225,111,0.6)]"></div>
+                                    <div className="w-2 h-2 rounded-full bg-[#53e16f] shadow-[0_0_8px_rgba(83,225,111,0.6)]"></div>
                                     <span className="text-[11px] font-bold text-white/60 tracking-[0.2em] uppercase">Configure</span>
                                 </div>
                                 <Maximize2 size={16} className="text-white/20 group-hover:text-white transition-all duration-300" />

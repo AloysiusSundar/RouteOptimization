@@ -223,7 +223,7 @@ export default function LandingPage() {
                                 </div>
                                 <div className="flex justify-between items-center py-3">
                                     <span className="font-mono text-[10px] text-zen-dark uppercase tracking-widest">Global_Latency</span>
-                                    <span className="font-mono text-xs text-secondary font-bold tracking-tighter">18ms AVG</span>
+                                    <span className="font-mono text-xs text-zen-neon font-bold tracking-tighter">18ms AVG</span>
                                 </div>
                             </div>
                         </div>
@@ -241,7 +241,7 @@ export default function LandingPage() {
                             {/* Node Indicators */}
                             <div className="absolute top-[30%] left-[25%] w-2 h-2 bg-zen-neon animate-pulse shadow-[0_0_10px_#00FF41]"></div>
                             <div className="absolute top-[45%] left-[65%] w-2 h-2 bg-zen-neon animate-pulse shadow-[0_0_10px_#00FF41] delay-700"></div>
-                            <div className="absolute top-[60%] left-[40%] w-2 h-2 bg-secondary animate-pulse shadow-[0_0_10px_#00e3fd] delay-300"></div>
+                            <div className="absolute top-[60%] left-[40%] w-2 h-2 bg-zen-neon animate-pulse shadow-[0_0_10px_#00FF41] delay-300"></div>
                             
                             <div className="absolute bottom-10 right-10 font-mono text-[10px] text-zen-neon bg-zen-bg/80 backdrop-blur-md p-5 border border-zen-neon/30 uppercase tracking-widest leading-relaxed">
                                 <span className="text-zen-dark">COORD:</span> 34.0522, -118.2437<br/>
