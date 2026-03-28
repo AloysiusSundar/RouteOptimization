@@ -2,17 +2,36 @@
 
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import dynamic from 'next/dynamic';
-import { Reorder } from 'framer-motion';
-import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } from '@/lib/ScheduleGenerator';
-import { optimizeRoute } from '@/lib/TspSolver';
-import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
-import { getTomTomDurationsMatrix, getTomTomLegDetails } from '@/lib/tomtomClient';
-import { Loader2, Search, Wand2, Sparkles, ChevronDown, ChevronUp, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab, Moon, Layers, CloudFog, CloudDrizzle, CloudRain, CloudLightning, CloudSnow, Wind, Cloud, Sun, Home as HomeIcon } from 'lucide-react';
-import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
-import { clusterPlaces } from '@/lib/Clusterer';
+import { Reorder, AnimatePresence, motion } from 'framer-motion';
+import { 
+    Sun, Cloud, CloudDrizzle, CloudRain, CloudLightning, CloudSnow, CloudFog,
+    Calendar, MapPin, Clock, ArrowRight, Search, Trash2, Plus, ChevronDown, 
+    ChevronUp, MoreVertical, AlertCircle, X, Menu, Maximize2, Minimize2, 
+    RefreshCw, Download, Share2, Globe, Wand2, Info, ExternalLink, Eye, 
+    EyeOff, Save, Loader2, Route, Activity, Car, House, GripVertical, 
+    Moon, Layers, Footprints, Bike, RotateCcw, Sparkles, CalendarCheck,
+    Map
+} from 'lucide-react';
+import { 
+    planTripWithPython, 
+    recommendWithPython, 
+    enrichWithPython, 
+    getWeatherWithPython, 
+    getGeocodeWithPython, 
+    getAutocompleteWithPython,
+    parseMagicPromptWithPython
+} from '@/lib/pythonClient';
 import { exportToCsv, exportToIcal } from '@/lib/ExportUtils';
-import { fetchWikiData, getOpenStatus } from '@/lib/WikiEnricher';
-import { getWeatherData, WeatherData } from '@/lib/weatherClient';
+import { getOpenStatus } from '@/lib/WikiEnricher';
+import { POI } from '@/lib/RecommendationEngine';
+import { ActiveHours } from '@/lib/ScheduleGenerator';
+
+interface WeatherData {
+    temp: number;
+    description: string;
+    iconCode: string;
+    location: string;
+}
 
 const WEATHER_ICON_MAP: Record<string, any> = {
     '01': Sun,
@@ -28,12 +47,29 @@ const WEATHER_ICON_MAP: Record<string, any> = {
 
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
 
-interface UIPlace extends SchedulePlace {
+interface UIPlace {
     id: string;
+    name: string;
+    visit_duration: number;
     is_reservation: boolean;
     reservation_date: string; // YYYY-MM-DD
     reservation_clock: string; // HH:MM
     coords?: [number, number]; // Optimized: store coords from autocomplete
+}
+
+interface ScheduleStop {
+    id: string;
+    place: string;
+    latlon: [number, number];
+    arrival: Date;
+    departure: Date;
+    day: string;
+    date: string;
+    time: string;
+    isReservation: boolean;
+    travelMinutes: number;
+    trafficDelayMinutes: number;
+    historicalMinutes: number;
 }
 
 interface SavedTrip {
@@ -125,7 +161,7 @@ export default function Home() {
             }
 
             setIsWeatherLoading(true);
-            const data = await getWeatherData(targetCoords[0], targetCoords[1]);
+            const data = await getWeatherWithPython(targetCoords[0], targetCoords[1]);
             setWeather(data);
             setIsWeatherLoading(false);
         };
@@ -145,7 +181,7 @@ export default function Home() {
         };
 
         // Add to the first empty slot or append
-        const emptyIdx = places.findIndex(p => !p.name);
+        const emptyIdx = places.findIndex((p: UIPlace) => !p.name);
         if (emptyIdx !== -1) {
             const nextPlaces = [...places];
             nextPlaces[emptyIdx] = newPlace;
@@ -181,8 +217,8 @@ export default function Home() {
         const timer = setTimeout(async () => {
             setSearchLoading(true);
             // Bias towards existing stops OR the current Base City
-            const bias = places.find(p => p.coords)?.coords || baseCityCoords || undefined;
-            const results = await getAutocompleteSuggestions(queryInput, bias, 100); // 100km hard boundary
+            const bias = places.find((p: UIPlace) => p.coords)?.coords || baseCityCoords || undefined;
+            const results = await getAutocompleteWithPython(queryInput, bias?.[0], bias?.[1]);
             setSuggestions(results);
             setSearchLoading(false);
         }, 400);
@@ -232,7 +268,7 @@ export default function Home() {
 
     const handleActiveHoursChange = (dateStr: string, field: 'start' | 'end', timeStr: string) => {
         const [hours, minutes] = timeStr.split(':').map(Number);
-        setActiveHours(prev => ({
+        setActiveHours((prev: Record<string, ActiveHours>) => ({
             ...prev,
             [dateStr]: {
                 ...prev[dateStr],
@@ -269,7 +305,7 @@ export default function Home() {
             reservation_clock: '12:00',
             coords: [poi.lat, poi.lon]
         }]);
-        setRecommendations(prev => prev.filter(p => p.id !== poi.id));
+        setRecommendations((prev: POI[]) => prev.filter((p: POI) => p.id !== poi.id));
     };
 
     const handleInspireMe = () => {
@@ -286,19 +322,17 @@ export default function Home() {
         setIsRecommending(true);
         setError(null);
         try {
-            const cityCoords = await getCoordinates(baseCity);
+            const cityCoords = await getGeocodeWithPython(baseCity);
             if (!cityCoords) throw new Error('Could not locate base city for recommendations.');
 
-            const rawPois = await fetchNearbyPOIs(cityCoords[0], cityCoords[1], interest);
-            const ranked = await rankPOIs(rawPois, interest);
+            const ranked = await recommendWithPython(cityCoords[0], cityCoords[1], interest);
             setRecommendations(ranked);
 
-            // V6.0: Progressive Enrichment (Async)
+            // V6.1: Progressive Enrichment (Async via Python)
             for (const poi of ranked.slice(0, 10)) {
-                const wiki = await fetchWikiData(poi.name, poi.lat, poi.lon);
-                const enriched = { ...poi, ...wiki };
-                setRecommendations(prev => prev.map(p => p.id === poi.id ? enriched : p));
-                if (poi.id === ranked[0].id) setSelectedEnrichment(enriched);
+                const enriched = await enrichWithPython(poi.name, poi.lat, poi.lon);
+                setRecommendations((prev: POI[]) => prev.map((p: POI) => p.id === poi.id ? { ...p, ...enriched } : p));
+                if (poi.id === ranked[0].id) setSelectedEnrichment({ ...poi, ...enriched });
             }
         } catch (err: any) {
             setError(err.message || 'Failed to fetch recommendations.');
@@ -309,7 +343,7 @@ export default function Home() {
 
     const handleRemovePlace = (index: number) => {
         if (places.length <= 2) return;
-        setPlaces(places.filter((_, i) => i !== index));
+        setPlaces(places.filter((_: any, i: number) => i !== index));
     };
 
     const handlePlaceChange = (index: number, field: keyof UIPlace, value: any) => {
@@ -323,211 +357,35 @@ export default function Home() {
             setError(null);
             setIsPlanning(true);
 
-            const validPlaces = places.filter(p => p.name.trim() !== '');
-            if (validPlaces.length < 2) {
-                throw new Error('Please add at least 2 destinations to plan a route.');
+            const validPlaces = places.filter((p: UIPlace) => p.name.trim() !== '');
+            if (validPlaces.length < 1) {
+                throw new Error('Please add at least 1 destination to plan a route.');
             }
 
-            console.log('📍 Starting route optimization with places:', validPlaces.map(p => p.name));
+            console.log('🐍 Outsourcing Trip Planning to Python Brain...');
 
-            // Step 1: Establish Initial Focus
-            let focus: [number, number] | undefined = undefined;
-
-            // If base city is provided, geocode it first to lock the region
-            if (baseCity.trim()) {
-                const cityCoords = await getCoordinates(baseCity);
-                if (cityCoords) {
-                    focus = cityCoords;
-                    console.log(`🌍 Base City Context Established: ${baseCity} @`, focus);
-                }
-            }
-
-            const coords: [number, number][] = [];
-            for (const place of validPlaces) {
-                if (place.coords) {
-                    coords.push(place.coords);
-                    if (!focus) focus = place.coords;
-                } else {
-                    console.log(`🔍 Geocoding ${place.name} with focus:`, focus);
-                    const c = await getCoordinates(place.name, focus);
-                    if (c) {
-                        coords.push(c);
-                        if (!focus) focus = c;
-                    }
-                }
-            }
-            const parsedPlaces = validPlaces.map(p => {
-                let reservation_time: Date | null = null;
-                if (p.is_reservation && p.reservation_date && p.reservation_clock) {
-                    reservation_time = new Date(`${p.reservation_date}T${p.reservation_clock}:00`);
-                }
-                return { ...p, reservation_time };
-            });
-
-            // NEW: Cluster destinations into Days (V4.1 Feature)
-            console.log(`🎯 Clustering destinations into ${tripLength} logical days...`);
-            const clusteredDays = clusterPlaces(
-                validPlaces.map((p, i: number) => ({
-                    ...p,
-                    coords: coords[i],
-                    reservation_date: p.reservation_date || '',
-                    is_reservation: !!p.is_reservation
-                })),
+            const result = await planTripWithPython({
+                baseCity,
+                accommodation,
+                accommodationCoords,
                 startDate,
                 tripLength,
-                accommodationCoords || baseCityCoords // Stay location is priority anchor
-            );
+                places: validPlaces,
+                transportMode,
+                activeHours
+            });
 
-            // Step 2: Solve TSP *Per Day* and Assemble Sequence
-            const finalOrderedCoords: [number, number][] = [];
-            const finalOrderedPlaces: any[] = [];
-            const finalOrderIndices: number[] = [];
-            const dayStopCounts: number[] = [];
-            const hasStayAnchor = !!accommodationCoords;
+            setMapCoords(result.orderedCoords);
+            setRouteGeoJson(result.routeGeoJson);
+            
+            // Re-wrap dates as Date objects for the UI if needed, 
+            // but the UI currently expects ScheduleStop[] which has ISO strings for arrival/departure
+            setSchedule(result.schedule.map((s: any) => ({
+                ...s,
+                arrival: new Date(s.arrival),
+                departure: new Date(s.departure)
+            })));
 
-            for (let dayIdx = 0; dayIdx < clusteredDays.length; dayIdx++) {
-                const day = clusteredDays[dayIdx];
-                if (day.indices.length === 0) {
-                    dayStopCounts.push(0);
-                    continue;
-                }
-
-                const anchorCoords = accommodationCoords;
-                const hasAnchor = hasStayAnchor;
-
-                if (day.indices.length === 1 && !hasAnchor) {
-                    const globalIdx = day.indices[0];
-                    finalOrderIndices.push(globalIdx);
-                    finalOrderedCoords.push(coords[globalIdx]);
-                    finalOrderedPlaces.push(parsedPlaces[globalIdx]);
-                    continue;
-                }
-
-                console.log(`🚗 Solving Day ${dayIdx + 1} locally for ${day.places.length} stops...`);
-
-                const targetDate = new Date(startDate + "T00:00:00");
-                targetDate.setDate(targetDate.getDate() + dayIdx);
-                const forcedDateStr = targetDate.toLocaleDateString('en-CA'); // YYYY-MM-DD local
-
-                let dayCoords: [number, number][] = day.indices.map(i => coords[i]);
-                let dayPlaces: any[] = day.indices.map(i => parsedPlaces[i]);
-
-                const dayCountForPoly = day.indices.length + (hasAnchor ? 2 : 0);
-
-                if (hasAnchor) {
-                    dayCoords = [anchorCoords as [number, number], ...dayCoords];
-                    dayPlaces = [{ id: `hotel-start-${forcedDateStr}`, name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, forcedDate: forcedDateStr }, ...dayPlaces];
-                }
-
-                // V7.2: Data-Proven Traffic Modeling (TomTom Priority for small sets, ORS for large)
-                let dayDurations = null;
-                if (dayCoords.length <= 20) {
-                    dayDurations = await getTomTomDurationsMatrix(dayCoords, transportMode);
-                }
-
-                if (dayDurations) {
-                    console.log('🚥 TomTom Traffic-Aware Matrix Acquired.');
-                } else {
-                    console.log(`⚠️ ${dayCoords.length > 8 ? 'Large set' : 'TomTom Failed'}. Using ORS base durations for optimization speed.`);
-                    dayDurations = await getDurationsMatrix(dayCoords, transportMode);
-                }
-                const { order: dayOrder } = optimizeRoute(
-                    dayCoords,
-                    dayDurations,
-                    dayPlaces,
-                    hasAnchor // fixedStart
-                );
-
-                // Map local order back to global indices and assembly
-                dayOrder.forEach(localIdx => {
-                    if (hasAnchor && localIdx === 0) {
-                        // Add Hotel Start
-                        finalOrderedCoords.push(anchorCoords as [number, number]);
-                        finalOrderedPlaces.push({ id: `hotel-start-${forcedDateStr}`, name: `Stay Location (Start)`, visit_duration: 0, is_reservation: false, is_stay_anchor: true, forcedDate: forcedDateStr });
-                    } else {
-                        const globalIdx = day.indices[hasAnchor ? localIdx - 1 : localIdx];
-                        finalOrderIndices.push(globalIdx);
-                        finalOrderedCoords.push(coords[globalIdx]);
-                        // Inject forcedDate into regular spots too
-                        finalOrderedPlaces.push({ ...parsedPlaces[globalIdx], forcedDate: forcedDateStr });
-                    }
-                });
-
-                // Add Hotel End for Round Trip
-                if (hasAnchor) {
-                    finalOrderedCoords.push(anchorCoords as [number, number]);
-                    finalOrderedPlaces.push({ id: `hotel-end-${forcedDateStr}`, name: `Stay Location (End)`, visit_duration: 0, is_reservation: false, is_stay_anchor: true, forcedDate: forcedDateStr });
-                }
-
-                // Track count for polyline slicing
-                dayStopCounts.push(dayCountForPoly);
-            }
-
-            console.log('🏁 Multi-Day Global Order:', finalOrderIndices);
-
-            // Step 3: Generate Schedule
-            // Optimization: We only need the durations for the SPECIFIC sequence found by the solver (N-1 legs).
-            // A full Matrix (N^2) for the whole trip is redundant and slow for 10+ stops.
-            const baseDurations = await getDurationsMatrix(finalOrderedCoords, transportMode);
-
-            // Sparse matrices for Schedule Generation
-            const liveMatrix: number[][] = Array(finalOrderedCoords.length).fill(0).map(() => Array(finalOrderedCoords.length).fill(0));
-            const historicalMatrix: number[][] = Array(finalOrderedCoords.length).fill(0).map(() => Array(finalOrderedCoords.length).fill(0));
-
-            try {
-                console.log(`📡 Fetching live traffic for ${finalOrderedCoords.length - 1} legs in parallel...`);
-                const legPromises = [];
-                for (let i = 0; i < finalOrderedCoords.length - 1; i++) {
-                    legPromises.push((async (idx: number) => {
-                        const details = await getTomTomLegDetails(finalOrderedCoords[idx], finalOrderedCoords[idx + 1], transportMode);
-                        if (details) {
-                            liveMatrix[idx][idx + 1] = details.liveMinutes;
-                            historicalMatrix[idx][idx + 1] = details.historicalMinutes;
-                        } else {
-                            // Fallback to ORS if specific leg fetch fails
-                            liveMatrix[idx][idx + 1] = baseDurations[idx][idx + 1];
-                            historicalMatrix[idx][idx + 1] = baseDurations[idx][idx + 1];
-                        }
-                    })(i));
-                }
-                await Promise.all(legPromises);
-            } catch (e) {
-                console.error('Failed to fetch leg details:', e);
-            }
-
-            const sched = generateSchedule(
-                finalOrderedPlaces,
-                finalOrderedCoords,
-                finalOrderedPlaces.map((_, idx: number) => idx),
-                new Date(startDate + "T00:00:00"),
-                activeHours,
-                liveMatrix,
-                baseDurations,
-                historicalMatrix
-            );
-
-            console.log('📅 Generated Schedule:', sched);
-
-            console.log(`🗺️ Fetching full optimized route polyline for ${finalOrderedCoords.length} stops...`);
-            const fullGeoJson = await getRoutePolyline(finalOrderedCoords, transportMode);
-
-            // NEW: Generate focused polylines for each day (V4.8)
-            const allRouteGeoJsons: Record<string, any> = { 'all': fullGeoJson };
-
-            // Extract day segments from the final sequence
-            let sliceStart = 0;
-            for (let dayIdx = 0; dayIdx < clusteredDays.length; dayIdx++) {
-                const dayCount = dayStopCounts[dayIdx];
-                if (dayCount > 1) {
-                    const dayCoords = finalOrderedCoords.slice(sliceStart, sliceStart + dayCount);
-                    allRouteGeoJsons[dayIdx.toString()] = await getRoutePolyline(dayCoords, transportMode);
-                }
-                sliceStart += dayCount;
-            }
-
-            setMapCoords(finalOrderedCoords);
-            setRouteGeoJson(allRouteGeoJsons);
-            setSchedule(sched);
         } catch (err: any) {
             setError(err.message || 'An error occurred while planning the tour.');
         } finally {
@@ -537,34 +395,33 @@ export default function Home() {
 
     const handleSpotlight = async (name: string, lat?: number, lon?: number) => {
         // 1. Check if we already have it in recommendations (it's likely enriched)
-        const existing = recommendations.find(r => r.name === name);
+        const existing = recommendations.find((r: POI) => r.name === name);
         if (existing && (existing.photo || existing.summary)) {
             setSelectedEnrichment(existing);
             return;
         }
 
-        // 2. Otherwise, fetch on-demand for manual stops
+        // 2. Otherwise, fetch on-demand via Python
         setIsSpotlightLoading(true);
-        // Instant visual feedback: clear old card or show skeleton immediately
         setSelectedEnrichment(null);
 
         try {
-            const wiki = await fetchWikiData(name, lat, lon);
+            const enrichment = await enrichWithPython(name, lat || 0, lon || 0);
             setSelectedEnrichment({
                 name,
                 lat: lat || 0,
                 lon: lon || 0,
                 tags: {},
-                ...wiki,
+                ...enrichment,
                 id: Math.random() // Temp ID for the spotlight view
-            } as POI);
+            } as any);
         } finally {
             setIsSpotlightLoading(false);
         }
     };
 
     const analytics = useMemo(() => {
-        const currentSchedule = (schedule || []).filter(s => {
+        const currentSchedule = (schedule || []).filter((s: ScheduleStop) => {
             if (selectedDay === 'all') return true;
             const d = new Date(startDate + "T00:00:00");
             d.setDate(d.getDate() + (selectedDay as number));
@@ -584,22 +441,22 @@ export default function Home() {
             const lastDeparture = currentSchedule[currentSchedule.length - 1].departure.getTime();
             displayHours = Math.ceil((lastDeparture - firstArrival) / 3600000);
         } else if (isAll) {
-            displayHours = Math.ceil(places.reduce((acc, p) => acc + p.visit_duration, 0) / 60);
+            displayHours = Math.ceil(places.reduce((acc: number, p: UIPlace) => acc + p.visit_duration, 0) / 60);
         }
 
         const displayReservations = isAll
-            ? places.filter(p => p.is_reservation).length
-            : currentSchedule.filter(s => s.isReservation).length;
+            ? places.filter((p: UIPlace) => p.is_reservation).length
+            : currentSchedule.filter((s: ScheduleStop) => s.isReservation).length;
 
         const reservationDetails = isAll
-            ? places.filter(p => p.is_reservation).map(p => ({
+            ? places.filter((p: UIPlace) => p.is_reservation).map((p: UIPlace) => ({
                 id: p.id,
                 name: p.name,
                 date: p.reservation_date,
                 time: p.reservation_clock,
                 latlon: p.coords
             }))
-            : currentSchedule.filter(s => s.isReservation).map(s => ({
+            : currentSchedule.filter((s: ScheduleStop) => s.isReservation).map((s: ScheduleStop) => ({
                 id: s.id,
                 name: s.place,
                 date: s.date,
@@ -621,13 +478,9 @@ export default function Home() {
         try {
             setIsAiParsing(true);
             setError(null);
-            const res = await fetch('/api/parse', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: aiInput })
-            });
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
+            
+            // V8.6: Federated Python AI Magic Parser (with Centralized Caching)
+            const data = await parseMagicPromptWithPython(aiInput);
 
             if (data.startDate) setStartDate(data.startDate);
             if (data.days) setTripLength(data.days);
@@ -636,7 +489,7 @@ export default function Home() {
 
             if (data.baseCity) {
                 console.log(`🔍 AI Auto-Verifying Base City: ${data.baseCity}...`);
-                const baseSuggestions = await getAutocompleteSuggestions(data.baseCity, undefined, 500);
+                const baseSuggestions = await getAutocompleteWithPython(data.baseCity);
                 const bestBase = baseSuggestions[0];
                 if (bestBase) {
                     setBaseCity(bestBase.name);
@@ -644,24 +497,24 @@ export default function Home() {
                     focus = bestBase.coords;
                 } else {
                     setBaseCity(data.baseCity);
-                    const cityCoords = await getCoordinates(data.baseCity);
+                    const cityCoords = await getGeocodeWithPython(data.baseCity);
                     if (cityCoords) focus = cityCoords;
                 }
             } else if (baseCity) {
-                const cityCoords = await getCoordinates(baseCity);
+                const cityCoords = await getGeocodeWithPython(baseCity);
                 if (cityCoords) focus = cityCoords;
             }
 
             if (data.stayLocation) {
                 console.log(`🔍 AI Auto-Verifying Stay Location: ${data.stayLocation}...`);
-                const staySuggestions = await getAutocompleteSuggestions(data.stayLocation, focus, 100);
+                const staySuggestions = await getAutocompleteWithPython(data.stayLocation, focus?.[0], focus?.[1]);
                 const bestStay = staySuggestions[0];
                 if (bestStay) {
                     setAccommodation(bestStay.name);
                     setAccommodationCoords(bestStay.coords);
                 } else {
                     setAccommodation(data.stayLocation);
-                    const stayCoords = await getCoordinates(data.stayLocation, focus);
+                    const stayCoords = await getGeocodeWithPython(data.stayLocation);
                     if (stayCoords) setAccommodationCoords(stayCoords);
                 }
             }
@@ -670,7 +523,7 @@ export default function Home() {
                 const verifiedPlaces: UIPlace[] = [];
                 for (const p of data.places) {
                     console.log(`🔍 AI Auto-Verifying: ${p.name}...`);
-                    const suggestions = await getAutocompleteSuggestions(p.name, focus, 100);
+                    const suggestions = await getAutocompleteWithPython(p.name, focus?.[0], focus?.[1]);
                     const bestMatch = suggestions[0];
 
                     verifiedPlaces.push({
@@ -734,7 +587,7 @@ export default function Home() {
     };
 
     const handleDeleteTrip = (id: string) => {
-        setSavedTrips(prev => prev.filter(t => t.id !== id));
+        setSavedTrips((prev: SavedTrip[]) => prev.filter((t: SavedTrip) => t.id !== id));
     };
 
     const handleClearAll = () => {
@@ -1089,7 +942,7 @@ export default function Home() {
                         className={`flex items-center gap-2 px-6 py-2.5 text-[12px] font-bold uppercase tracking-wider transition-all ${mapMode === 'drag' ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/20 rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                         title="Pan and Zoom"
                     >
-                        <Grab size={16} /> Drag
+                        <GripVertical size={16} /> Drag
                     </button>
                     <button
                         onClick={() => setMapMode('pin')}
@@ -1259,7 +1112,7 @@ export default function Home() {
                                                 className="w-full bg-transparent border-none text-xs text-white placeholder:text-white/20 focus:outline-none focus:ring-0 p-0 resize-none min-h-[100px] font-medium leading-relaxed"
                                                 placeholder="e.g., 'I want a 3 day trip to NYC starting next Monday. I have a 7pm dinner reservation at Le Coucou on day 2. Include Central Park and The Met.'"
                                                 value={aiInput}
-                                                onChange={(e) => setAiInput(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAiInput(e.target.value)}
                                             />
                                             <div className="flex justify-end mt-2">
                                                 <button
@@ -1284,7 +1137,7 @@ export default function Home() {
                                                 placeholder="e.g. Tokyo"
                                                 value={baseCity}
                                                 onFocus={() => setActiveSearch({ type: 'base' })}
-                                                onChange={e => {
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                     setBaseCity(e.target.value);
                                                     setBaseCityCoords(null);
                                                 }}
@@ -1317,7 +1170,7 @@ export default function Home() {
                                                 placeholder="e.g. Hilton Shinjuku"
                                                 value={accommodation}
                                                 onFocus={() => setActiveSearch({ type: 'stay' })}
-                                                onChange={e => {
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                     setAccommodation(e.target.value);
                                                     setAccommodationCoords(null);
                                                 }}
@@ -1351,14 +1204,14 @@ export default function Home() {
                                                 type="date"
                                                 value={startDate}
                                                 onClick={(e) => e.currentTarget.showPicker()}
-                                                onChange={e => setStartDate(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
                                             />
                                             <Calendar size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-primary)] pointer-events-none group-hover:scale-110 transition-transform" />
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/90 uppercase ml-1">Days</label>
-                                        <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none" type="number" min={1} max={30} value={tripLength} onChange={e => setTripLength(parseInt(e.target.value) || 1)} />
+                                        <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none" type="number" min={1} max={30} value={tripLength} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTripLength(parseInt(e.target.value) || 1)} />
                                     </div>
                                     <div className="space-y-1.5 col-span-2 mt-1">
                                         <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/90 uppercase ml-1">Travel Mode</label>
@@ -1420,13 +1273,13 @@ export default function Home() {
                                                                     type="time"
                                                                     value={formatTime(hoursParams.start.hours, hoursParams.start.minutes)}
                                                                     onClick={(e) => e.currentTarget.showPicker()}
-                                                                    onChange={(e) => handleActiveHoursChange(dateStr, 'start', e.target.value)}
+                                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleActiveHoursChange(dateStr, 'start', e.target.value)}
                                                                 />
                                                                 <Clock size={10} className="absolute right-0 top-1/2 -translate-y-1/2 text-[var(--color-primary)]/40 group-hover/time:text-[var(--color-primary)] transition-colors pointer-events-none" />
                                                             </div>
                                                             <div className="flex flex-col ml-1 opacity-0 group-hover/time:opacity-100 transition-opacity">
-                                                                <button onClick={(e) => { e.stopPropagation(); shiftActiveHours(dateStr, 'start', 60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="+1 Hour"><ChevronUp size={10} /></button>
-                                                                <button onClick={(e) => { e.stopPropagation(); shiftActiveHours(dateStr, 'start', -60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="-1 Hour"><ChevronDown size={10} /></button>
+                                                                <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); shiftActiveHours(dateStr, 'start', 60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="+1 Hour"><ChevronUp size={10} /></button>
+                                                                <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); shiftActiveHours(dateStr, 'start', -60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="-1 Hour"><ChevronDown size={10} /></button>
                                                             </div>
                                                         </div>
                                                         <div className="w-2 h-px bg-white/10"></div>
@@ -1437,13 +1290,13 @@ export default function Home() {
                                                                     type="time"
                                                                     value={formatTime(hoursParams.end.hours, hoursParams.end.minutes)}
                                                                     onClick={(e) => e.currentTarget.showPicker()}
-                                                                    onChange={(e) => handleActiveHoursChange(dateStr, 'end', e.target.value)}
+                                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleActiveHoursChange(dateStr, 'end', e.target.value)}
                                                                 />
                                                                 <Clock size={10} className="absolute right-0 top-1/2 -translate-y-1/2 text-[var(--color-primary)]/40 group-hover/time:text-[var(--color-primary)] transition-colors pointer-events-none" />
                                                             </div>
                                                             <div className="flex flex-col ml-1 opacity-0 group-hover/time:opacity-100 transition-opacity">
-                                                                <button onClick={(e) => { e.stopPropagation(); shiftActiveHours(dateStr, 'end', 60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="+1 Hour"><ChevronUp size={10} /></button>
-                                                                <button onClick={(e) => { e.stopPropagation(); shiftActiveHours(dateStr, 'end', -60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="-1 Hour"><ChevronDown size={10} /></button>
+                                                                <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); shiftActiveHours(dateStr, 'end', 60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="+1 Hour"><ChevronUp size={10} /></button>
+                                                                <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); shiftActiveHours(dateStr, 'end', -60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="-1 Hour"><ChevronDown size={10} /></button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1463,7 +1316,7 @@ export default function Home() {
                                     </div>
 
                                     <Reorder.Group axis="y" values={places} onReorder={setPlaces} className="space-y-4">
-                                        {places.map((place, idx) => (
+                                        {places.map((place: UIPlace, idx: number) => (
                                             <Reorder.Item
                                                 key={place.id}
                                                 value={place}
@@ -1472,7 +1325,7 @@ export default function Home() {
                                             >
                                                 {/* Drag handle */}
                                                 <div className="absolute -left-3 top-1/2 -translate-y-1/2 p-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
-                                                    <Grab size={16} className="text-[var(--color-primary)]/40" />
+                                                    <GripVertical size={16} className="text-[var(--color-primary)]/40" />
                                                 </div>
 
                                                 <div className="flex items-start justify-between mb-3">
@@ -1482,7 +1335,7 @@ export default function Home() {
                                                             placeholder={idx === 0 ? "e.g., TeamLab Borderless" : "e.g., Shibuya Crossing"}
                                                             value={place.name}
                                                             onFocus={() => setActiveSearch({ type: 'place', index: idx })}
-                                                            onChange={(e) => {
+                                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                                 handlePlaceChange(idx, 'name', e.target.value);
                                                                 if (place.coords) handlePlaceChange(idx, 'coords', undefined); // Clear coords if they edit the text
                                                             }}
@@ -1494,7 +1347,7 @@ export default function Home() {
                                                                         <Loader2 className="animate-spin" size={12} /> Searching...
                                                                     </div>
                                                                 )}
-                                                                {suggestions.map((s, sIdx) => (
+                                                                {suggestions.map((s: any, sIdx: number) => (
                                                                     <button
                                                                         key={sIdx}
                                                                         onClick={() => handleSelectSuggestion(idx, s)}
@@ -1509,7 +1362,7 @@ export default function Home() {
                                                     </div>
                                                     {places.length > 1 && (
                                                         <button
-                                                            onClick={(e) => {
+                                                            onClick={(e: React.MouseEvent) => {
                                                                 e.stopPropagation();
                                                                 handleRemovePlace(idx);
                                                             }}
@@ -1526,7 +1379,7 @@ export default function Home() {
                                                             type="number"
                                                             className="w-12 bg-transparent border-none text-xs p-0 text-center font-bold text-[var(--color-primary)] focus:ring-0 outline-none"
                                                             value={place.visit_duration}
-                                                            onChange={(e) => handlePlaceChange(idx, 'visit_duration', parseInt(e.target.value) || 60)}
+                                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePlaceChange(idx, 'visit_duration', parseInt(e.target.value) || 60)}
                                                         />
                                                         <span className="text-[9px] text-white/20 font-bold uppercase">min</span>
                                                     </div>
@@ -1535,7 +1388,7 @@ export default function Home() {
                                                             id={`res-${idx}`}
                                                             type="checkbox"
                                                             checked={place.is_reservation}
-                                                            onChange={(e) => handlePlaceChange(idx, 'is_reservation', e.target.checked)}
+                                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePlaceChange(idx, 'is_reservation', e.target.checked)}
                                                             className="w-4 h-4 rounded border-white/10 bg-white/5 text-[var(--color-primary)] focus:ring-[var(--color-primary)]/20 cursor-pointer transition-all"
                                                         />
                                                         <label htmlFor={`res-${idx}`} className="text-[10px] font-bold uppercase tracking-wider text-white/60 cursor-pointer hover:text-white transition-colors">Reservation</label>
@@ -1546,11 +1399,11 @@ export default function Home() {
                                                     <div className="grid grid-cols-2 gap-4 pt-3 mt-2 border-t border-[var(--color-outline-variant)]/10 animate-in fade-in slide-in-from-top-1">
                                                         <div className="space-y-1">
                                                             <label className="text-[9px] font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase">Date</label>
-                                                            <input className="w-full bg-transparent border-none text-xs p-0 text-[var(--color-on-surface)] focus:ring-0 outline-none" type="date" value={place.reservation_date} onChange={(e) => handlePlaceChange(idx, 'reservation_date', e.target.value)} />
+                                                            <input className="w-full bg-transparent border-none text-xs p-0 text-[var(--color-on-surface)] focus:ring-0 outline-none" type="date" value={place.reservation_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePlaceChange(idx, 'reservation_date', e.target.value)} />
                                                         </div>
                                                         <div className="space-y-1">
                                                             <label className="text-[9px] font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase">Time</label>
-                                                            <input className="w-full bg-transparent border-none text-xs p-0 text-[var(--color-on-surface)] focus:ring-0 outline-none" type="time" value={place.reservation_clock} onChange={(e) => handlePlaceChange(idx, 'reservation_clock', e.target.value)} />
+                                                            <input className="w-full bg-transparent border-none text-xs p-0 text-[var(--color-on-surface)] focus:ring-0 outline-none" type="time" value={place.reservation_clock} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePlaceChange(idx, 'reservation_clock', e.target.value)} />
                                                         </div>
                                                     </div>
                                                 )}
@@ -1569,7 +1422,7 @@ export default function Home() {
                                             onClick={handleInspireMe}
                                             className="text-[var(--color-planner-green)] hover:text-white text-[10px] font-bold transition-all flex items-center gap-1 bg-[var(--color-planner-green)]/10 px-2 py-1 rounded-none"
                                         >
-                                            <Sparkle size={10} />
+                                            <Sparkles size={10} />
                                             Inspire Me
                                         </button>
                                     </div>
@@ -1580,8 +1433,8 @@ export default function Home() {
                                             <input
                                                 type="text"
                                                 value={interest}
-                                                onChange={(e) => setInterest(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleDiscover()}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInterest(e.target.value)}
+                                                onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && handleDiscover()}
                                                 placeholder="What are you in the mood for? (e.g. Art, Coffee, Landmarks)"
                                                 className="w-full bg-white/5 border border-white/5 rounded-none pl-9 pr-4 py-2 text-[11px] text-white placeholder-white/20 focus:border-[var(--color-secondary)]/50 focus:bg-white/[0.08] outline-none transition-all"
                                             />
@@ -1762,7 +1615,7 @@ export default function Home() {
                                                                         <div className="flex flex-col gap-0.5">
                                                                             <div className="flex items-center gap-2">
                                                                                 <h4 className="text-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-legacy-blue)] transition-colors line-clamp-1">
-                                                                                    {isHotel ? <HomeIcon size={14} className="text-white group-hover:text-[var(--color-legacy-blue)] transition-colors translate-y-[-1px]" /> : `${realStopCounter}.`} {stop.place}
+                                                                                    {isHotel ? <House size={14} className="text-white group-hover:text-[var(--color-legacy-blue)] transition-colors translate-y-[-1px]" /> : `${realStopCounter}.`} {stop.place}
                                                                                 </h4>
                                                                                 {stop.isReservation && (
                                                                                     <div className="px-1.5 py-0.5 rounded-md bg-[var(--color-secondary)]/10 border border-[var(--color-secondary)]/20 text-[var(--color-secondary)]" title="Fixed Reservation">
@@ -1795,7 +1648,7 @@ export default function Home() {
                                                                             <span className="text-[10px] font-black text-white">{Math.round(travelInfo.mins || 0)}m</span>
                                                                         </div>
 
-                                                                        {Math.abs(travelInfo.delay) > 0.5 && (
+                                                                        {Math.abs(travelInfo.delay) >= 0.1 && (
                                                                             <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-tighter border shadow-sm ${travelInfo.delay > 0
                                                                                 ? (travelInfo.delay > 2 ? 'bg-red-500/20 border-red-500/30 text-red-100' : 'bg-orange-500/20 border-orange-500/30 text-orange-100')
                                                                                 : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-100'

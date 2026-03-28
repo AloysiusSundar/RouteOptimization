@@ -73,9 +73,12 @@ export default function MapComponent({
   }, [coords, accommodationCoords]);
 
   const segments = useMemo(() => {
-    if (!routeGeoJson || !routeGeoJson.features || routeGeoJson.features.length === 0) return [];
+    // V8.6: Federated GeoJSON Structure Handling (Support for nested Day-indexes or Direct FeatureCollection)
+    const geoData = (routeGeoJson && !routeGeoJson.features && routeGeoJson.all) ? routeGeoJson.all : routeGeoJson;
+    
+    if (!geoData || !geoData.features || geoData.features.length === 0) return [];
 
-    const feature = routeGeoJson.features[0];
+    const feature = geoData.features[0];
     const coords = feature.geometry.coordinates; // [lon, lat]
     const wayPoints = feature.properties?.way_points;
 
@@ -102,6 +105,18 @@ export default function MapComponent({
     }
     return result;
   }, [routeGeoJson, schedule]);
+
+  // V8.4: Advanced Human-Readable Duration Formatting
+  const formatDuration = (decimalMinutes: number) => {
+    if (!decimalMinutes || decimalMinutes <= 0) return '0s';
+    const totalSeconds = Math.round(decimalMinutes * 60);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+
+    if (mins === 0) return `${secs}s`;
+    if (secs === 0) return `${mins}m`;
+    return `${mins}m ${secs}s`;
+  };
 
   return (
     <div className={`h-full w-full rounded-2xl overflow-hidden shadow-2xl z-0 relative ${mapMode === 'pin' ? 'cursor-crosshair' : ''}`}>
@@ -312,7 +327,7 @@ export default function MapComponent({
                           <Activity size={10} className="text-[var(--color-map-pin-secondary)] shrink-0 translate-y-[-1px]" />
                           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 truncate">Drive Time</span>
                         </div>
-                        <span className="text-sm font-black text-[var(--color-map-route)] ml-4 tabular-nums">{segment.travelMinutes.toFixed(1)}m</span>
+                        <span className="text-sm font-black text-[var(--color-map-route)] ml-4 tabular-nums">{formatDuration(segment.travelMinutes)}</span>
                       </div>
 
                       <div className="h-px bg-white/5 w-full"></div>
@@ -322,7 +337,9 @@ export default function MapComponent({
                         const delay = segment.travelMinutes - segment.historicalMinutes;
                         const baseline = Math.max(0.5, segment.historicalMinutes);
                         const delayPercent = Math.round((delay / baseline) * 100);
-                        const isSignificant = delay > 0.5 || Math.abs(delayPercent) >= 15;
+                        
+                        // V8.6: Relaxed Significance (Show if > 0.1m difference OR any significant percentage)
+                        const isSignificant = Math.abs(delay) >= 0.1 || Math.abs(delayPercent) >= 10;
 
                         if (!isSignificant) {
                           return (
@@ -340,7 +357,7 @@ export default function MapComponent({
                         return (
                           <div className={`flex items-center justify-center px-2 py-1.5 rounded-lg border text-center ${colorClass.split(' ').slice(0, 2).join(' ')}`}>
                             <span className={`text-[9px] font-bold uppercase tracking-widest ${colorClass.split(' ').slice(2).join(' ')}`}>
-                              {delay > 0 ? '+' : ''}{Math.abs(delay).toFixed(1)}m {isSlower ? 'slower' : 'faster'} than usual
+                              {delay > 0 ? '+' : '-'}{formatDuration(Math.abs(delay))} {isSlower ? 'slower' : 'faster'} than usual
                             </span>
                           </div>
                         );
