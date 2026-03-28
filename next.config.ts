@@ -5,12 +5,16 @@ const nextConfig: NextConfig = {
   // @ts-ignore
   turbopack: {},
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://127.0.0.1:8080/api/:path*',
-      },
-    ];
+    // Only rewrite in development mode (local server)
+    if (process.env.NODE_ENV !== 'production') {
+      return [
+        {
+          source: '/api/:path*',
+          destination: 'http://127.0.0.1:8080/api/:path*',
+        },
+      ];
+    }
+    return [];
   },
 };
 
