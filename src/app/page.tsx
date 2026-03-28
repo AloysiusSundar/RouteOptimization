@@ -72,14 +72,14 @@ export default function LandingPage() {
                                     </h1>
 
                                     {/* Mask Layer: Black on Green Reveal */}
-                                    <motion.div 
+                                    <motion.div
                                         className="absolute top-0 left-0 h-full bg-zen-neon overflow-hidden pointer-events-none"
                                         initial={{ width: "0%" }}
-                                        animate={{ 
+                                        animate={{
                                             width: ["0%", "100%", "0%"]
                                         }}
-                                        transition={{ 
-                                            duration: 2.2, 
+                                        transition={{
+                                            duration: 2.2,
                                             ease: "easeInOut"
                                         }}
                                         style={{ height: 'calc(100% - 1.2rem)' }} // Account for margin-bottom of h1
@@ -126,13 +126,13 @@ export default function LandingPage() {
                             transition={{ delay: 1, duration: 1 }}
                             className="absolute bottom-12 flex gap-6 overflow-hidden max-w-full px-6"
                         >
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Python</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">FastAPI</span>
                             <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Next.js 16 // React 19</span>
-                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Tailwind 4</span>
-                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Framer Motion 12</span>
-                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Gemini 3.1 Flash-Lite</span>
-                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Held-Karp API</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Vector Search</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Deterministic Held-Karp</span>
                             <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Leaflet.js</span>
-                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Geospatial Intelligence</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Federated Architecture</span>
                         </motion.div>
                     </section>
 
