@@ -754,7 +754,7 @@ export default function Home() {
                 <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
                     <nav className="px-3 space-y-6 mb-8">
                         <a
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${!isMyTripsOpen ? 'bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] border-r-2 border-[var(--color-secondary)]' : 'text-white/40 hover:bg-white/5'}`}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-none transition-all ${!isMyTripsOpen ? 'bg-[var(--color-primary-container)]/10 text-[var(--color-primary)] border-r-2 border-[var(--color-secondary)]' : 'text-white/40 hover:bg-white/5'}`}
                             href="#"
                             onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(false); }}
                         >
@@ -762,7 +762,7 @@ export default function Home() {
                             <span className="font-medium text-sm">Itinerary</span>
                         </a>
                         <a
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isMyTripsOpen ? 'bg-[#00ff41]/10 text-[#00ff41] border-r-2 border-[#00ff41]' : 'text-white/40 hover:bg-white/5'}`}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-none transition-all ${isMyTripsOpen ? 'bg-[#00ff41]/10 text-[#00ff41] border-r-2 border-[#00ff41]' : 'text-white/40 hover:bg-white/5'}`}
                             href="#"
                             onClick={(e) => { e.preventDefault(); setIsMyTripsOpen(true); }}
                         >
@@ -778,7 +778,7 @@ export default function Home() {
                                 </div>
                                 {savedTrips.length === 0 ? (
                                     <div className="p-10 text-center space-y-4">
-                                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto opacity-20">
+                                        <div className="w-16 h-16 bg-white/5 rounded-none flex items-center justify-center mx-auto opacity-20">
                                             <Map size={32} />
                                         </div>
                                         <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest">No trips saved yet</p>
@@ -786,11 +786,11 @@ export default function Home() {
                                 ) : (
                                     <div className="space-y-4">
                                         {savedTrips.map(trip => (
-                                            <div key={trip.id} className="group relative bg-[var(--color-surface-container-lowest)] p-4 rounded-2xl border border-white/5 hover:border-[var(--color-primary)]/40 transition-all shadow-xl">
+                                            <div key={trip.id} className="group relative bg-[var(--color-surface-container-lowest)] p-4 rounded-none border border-white/5 hover:border-[var(--color-primary)]/40 transition-all shadow-xl">
                                                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleDeleteTrip(trip.id); }}
-                                                        className="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                                                        className="p-1.5 bg-red-500/20 text-red-400 rounded-none hover:bg-red-500 hover:text-white transition-all"
                                                     >
                                                         <Trash2 size={12} />
                                                     </button>
@@ -817,16 +817,16 @@ export default function Home() {
                                         <div className="px-6 mb-4 flex items-center justify-between">
                                             <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-secondary)] uppercase">POI Insights</span>
                                         </div>
-                                        <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3 animate-pulse">
+                                        <div className="bg-[var(--color-surface-container-lowest)] rounded-none overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3 animate-pulse">
                                             <div className="h-48 w-full bg-white/5" />
                                             <div className="p-6 relative z-10 -mt-10">
-                                                <div className="h-6 w-3/4 bg-white/10 rounded-lg mb-4" />
+                                                <div className="h-6 w-3/4 bg-white/10 rounded-none mb-4" />
                                                 <div className="space-y-2 mb-6">
-                                                    <div className="h-3 w-full bg-white/5 rounded" />
-                                                    <div className="h-3 w-full bg-white/5 rounded" />
-                                                    <div className="h-3 w-2/3 bg-white/5 rounded" />
+                                                    <div className="h-3 w-full bg-white/5 rounded-none" />
+                                                    <div className="h-3 w-full bg-white/5 rounded-none" />
+                                                    <div className="h-3 w-2/3 bg-white/5 rounded-none" />
                                                 </div>
-                                                <div className="h-10 w-full bg-[var(--color-primary)]/10 rounded-2xl" />
+                                                <div className="h-10 w-full bg-[var(--color-primary)]/10 rounded-none" />
                                             </div>
                                         </div>
                                     </div>
@@ -840,20 +840,20 @@ export default function Home() {
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                                             </button>
                                         </div>
-                                        <div className="bg-[var(--color-surface-container-lowest)] rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3">
+                                        <div className="bg-[var(--color-surface-container-lowest)] rounded-none overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] mx-3">
                                             {selectedEnrichment.photo ? (
-                                                <div className="h-48 w-full relative group/photo overflow-hidden bg-[var(--color-surface)] rounded-t-3xl">
+                                                <div className="h-48 w-full relative group/photo overflow-hidden bg-[var(--color-surface)] rounded-t-none">
                                                     <img src={selectedEnrichment.photo} alt={selectedEnrichment.name} className="w-full h-full object-cover transition-all duration-700 group-hover/photo:scale-110 brightness-[0.85] group-hover/photo:brightness-100" />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface-container-lowest)] via-[var(--color-surface-container-lowest)]/40 to-transparent opacity-100 z-10" />
                                                     <div className="progressive-blur-bottom" />
                                                     <div className="absolute top-4 right-4 flex gap-2.5 items-center z-50">
                                                         {selectedEnrichment.website && (
-                                                            <a href={selectedEnrichment.website} title="Official Website" target="_blank" rel="noopener noreferrer" className="p-2.5 bg-black/60 rounded-full text-white hover:bg-[var(--color-primary)] hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl">
+                                                            <a href={selectedEnrichment.website} title="Official Website" target="_blank" rel="noopener noreferrer" className="p-2.5 bg-black/60 rounded-none text-white hover:bg-[var(--color-primary)] hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl">
                                                                 <Globe size={14} />
                                                             </a>
                                                         )}
                                                         {selectedEnrichment.pageId && (
-                                                            <a href={`https://en.wikipedia.org/?curid=${selectedEnrichment.pageId}`} title="Wikipedia Article" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center bg-black/60 rounded-full text-white hover:bg-white hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl group/wiki">
+                                                            <a href={`https://en.wikipedia.org/?curid=${selectedEnrichment.pageId}`} title="Wikipedia Article" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center bg-black/60 rounded-none text-white hover:bg-white hover:text-black transition-all backdrop-blur-md border border-white/10 shadow-xl group/wiki">
                                                                 <span className="text-[17px] font-bold leading-none translate-y-[1px] group-hover/wiki:scale-110 transition-transform" style={{ fontFamily: '"Linux Libertine", "Hoefler Text", var(--font-libre-baskerville), serif' }}>W</span>
                                                             </a>
                                                         )}
@@ -871,7 +871,7 @@ export default function Home() {
                                                 )}
                                                 <div className="flex flex-col gap-3">
                                                     {selectedEnrichment.opening_hours && (
-                                                        <div className="flex items-center gap-3 bg-black/20 p-3 rounded-2xl border border-white/5 shadow-inner">
+                                                        <div className="flex items-center gap-3 bg-black/20 p-3 rounded-none border border-white/5 shadow-inner">
                                                             <Clock className="text-[var(--color-secondary)]" size={14} />
                                                             <span className="text-[10px] font-bold text-white/60 tracking-wide uppercase">{getOpenStatus(selectedEnrichment.opening_hours).message}</span>
                                                         </div>
@@ -879,7 +879,7 @@ export default function Home() {
                                                     {!places.some(p => p.name === selectedEnrichment.name) && (
                                                         <button
                                                             onClick={() => handleAddRecommended(selectedEnrichment)}
-                                                            className="w-full bg-[var(--color-primary)] text-black text-[10px] font-bold py-3.5 rounded-2xl shadow-[0_10px_30px_-5px_rgba(75,142,255,0.4)] active:scale-[0.98] transition-all uppercase tracking-[0.2em] mt-1 group"
+                                                            className="w-full bg-[var(--color-primary)] text-black text-[10px] font-bold py-3.5 rounded-none shadow-[0_10px_30px_-5px_rgba(75,142,255,0.4)] active:scale-[0.98] transition-all uppercase tracking-[0.2em] mt-1 group"
                                                         >
                                                             Add to Plan
                                                             <Plus size={12} className="inline ml-1 group-hover:rotate-90 transition-transform" />
@@ -904,7 +904,7 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-primary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                            <div className="bg-white/5 p-3 rounded-none border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-primary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
                                 <div className="flex items-center gap-2 text-[var(--color-primary)] opacity-60 group-hover:opacity-100 transition-opacity">
                                     <MapPin size={12} />
                                     <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Stops</span>
@@ -912,7 +912,7 @@ export default function Home() {
                                 <div className="text-lg font-black text-white">{analytics.stops}</div>
                             </div>
 
-                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-secondary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                            <div className="bg-white/5 p-3 rounded-none border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-secondary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
                                 <div className="flex items-center gap-2 text-[var(--color-secondary)] opacity-60 group-hover:opacity-100 transition-opacity">
                                     <Clock size={12} />
                                     <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Hours</span>
@@ -964,13 +964,13 @@ export default function Home() {
                         )}
 
                         {isWeatherLoading ? (
-                            <div className="bg-white/5 p-4 rounded-3xl border border-white/5 flex items-center justify-center h-20 animate-pulse">
+                            <div className="bg-white/5 p-4 rounded-none border border-white/5 flex items-center justify-center h-20 animate-pulse">
                                 <Loader2 size={20} className="text-[var(--color-primary)] animate-spin opacity-40" />
                             </div>
                         ) : weather ? (() => {
                             const Icon = WEATHER_ICON_MAP[weather.iconCode] || Cloud;
                             return (
-                                <div className="bg-gradient-to-br from-[var(--color-primary)]/10 to-transparent p-4 rounded-3xl border border-white/5 flex items-center justify-between group hover:from-[var(--color-primary)]/20 transition-all cursor-default relative overflow-hidden">
+                                <div className="bg-gradient-to-br from-[var(--color-primary)]/10 to-transparent p-4 rounded-none border border-white/5 flex items-center justify-between group hover:from-[var(--color-primary)]/20 transition-all cursor-default relative overflow-hidden">
                                     <div className="absolute top-0 right-0 p-1 opacity-10">
                                         <Icon size={40} className="text-[var(--color-primary)]" />
                                     </div>
@@ -988,7 +988,7 @@ export default function Home() {
                                 </div>
                             );
                         })() : (
-                            <div className="bg-white/5 p-4 rounded-3xl border border-white/5 flex items-center justify-between group transition-all cursor-default relative overflow-hidden">
+                            <div className="bg-white/5 p-4 rounded-none border border-white/5 flex items-center justify-between group transition-all cursor-default relative overflow-hidden">
                                 <div className="space-y-1 relative z-10">
                                     <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">Real-time Weather</div>
                                     <div className="text-xs font-bold text-white/60">
@@ -1031,14 +1031,14 @@ export default function Home() {
                             <div className="grid grid-cols-2 gap-4">
                                 <button
                                     onClick={() => setIsSaveModalOpen(false)}
-                                    className="px-6 py-4 rounded-2xl border border-white/10 text-white/60 hover:bg-white/5 transition-all font-bold text-xs uppercase tracking-widest"
+                                    className="px-6 py-4 rounded-none border border-white/10 text-white/60 hover:bg-white/5 transition-all font-bold text-xs uppercase tracking-widest"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveTrip}
                                     disabled={!saveName.trim()}
-                                    className="px-6 py-4 rounded-2xl bg-[var(--color-zen-neon)] text-black font-bold text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                                    className="px-6 py-4 rounded-none bg-[var(--color-zen-neon)] text-black font-bold text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                                 >
                                     Store Route
                                 </button>
@@ -1053,33 +1053,33 @@ export default function Home() {
 
                 {/* Top Navigation */}
                 {/* Floating Navigation Pill (Left) */}
-                <div className="fixed top-6 left-80 z-40 flex items-center gap-1.5 p-1.5 backdrop-blur-2xl bg-black/40 border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="fixed top-6 left-80 z-40 flex items-center gap-1.5 p-1.5 backdrop-blur-2xl bg-black/40 border border-white/10 rounded-none shadow-2xl animate-in fade-in slide-in-from-top-4 duration-500">
                     <button
                         onClick={() => setIsMyTripsOpen(false)}
-                        className={`px-7 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${!isMyTripsOpen ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        className={`px-7 py-2.5 text-[12px] font-bold uppercase tracking-wider transition-all ${!isMyTripsOpen ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/20 rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                     >
                         Planner
                     </button>
                     <button
                         onClick={() => setIsMyTripsOpen(true)}
-                        className={`px-7 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${isMyTripsOpen ? 'bg-[var(--color-zen-neon)] text-black shadow-lg shadow-[var(--color-zen-neon)]/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        className={`px-7 py-2.5 text-[12px] font-bold uppercase tracking-wider transition-all ${isMyTripsOpen ? 'bg-[var(--color-zen-neon)] text-black shadow-lg shadow-[var(--color-zen-neon)]/20 rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                     >
                         Saved Trips
                     </button>
                 </div>
 
                 {/* Floating Map Mode Pill (Center) */}
-                <div className="fixed top-6 left-[calc(50%+9rem)] -translate-x-1/2 z-40 flex items-center gap-1.5 p-1.5 backdrop-blur-2xl bg-black/40 border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
+                <div className="fixed top-6 left-[calc(50%+9rem)] -translate-x-1/2 z-40 flex items-center gap-1.5 p-1.5 backdrop-blur-2xl bg-black/40 border border-white/10 rounded-none shadow-2xl animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
                     <button
                         onClick={() => setMapMode('drag')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${mapMode === 'drag' ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        className={`flex items-center gap-2 px-6 py-2.5 text-[12px] font-bold uppercase tracking-wider transition-all ${mapMode === 'drag' ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/20 rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                         title="Pan and Zoom"
                     >
                         <Grab size={16} /> Drag
                     </button>
                     <button
                         onClick={() => setMapMode('pin')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all ${mapMode === 'pin' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg shadow-[var(--color-zen-neon)]/30' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        className={`flex items-center gap-2 px-6 py-2.5 text-[12px] font-bold uppercase tracking-wider transition-all ${mapMode === 'pin' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg shadow-[var(--color-zen-neon)]/30 rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                         title="Drop Pin to Add Location"
                     >
                         <MapPin size={16} /> Pin
@@ -1087,32 +1087,32 @@ export default function Home() {
                 </div>
 
                 {/* Floating System Pill (Right) */}
-                <div className="fixed top-6 right-10 z-40 flex items-center gap-5 p-1.5 backdrop-blur-2xl bg-black/40 border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-500 delay-200">
-                    <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/5">
+                <div className="fixed top-6 right-10 z-40 flex items-center gap-5 p-1.5 backdrop-blur-2xl bg-black/40 border border-white/10 rounded-none shadow-2xl animate-in fade-in slide-in-from-top-4 duration-500 delay-200">
+                    <div className="flex items-center bg-white/5 rounded-none p-1 border border-white/5">
                         <button
                             onClick={() => setMapStyle('dark')}
-                            className={`p-2.5 rounded-lg transition-all ${mapStyle === 'dark' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            className={`p-2.5 transition-all ${mapStyle === 'dark' ? 'bg-[var(--color-primary)] text-black rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                             title="Dark Matter"
                         >
                             <Moon size={16} />
                         </button>
                         <button
                             onClick={() => setMapStyle('light')}
-                            className={`p-2.5 rounded-lg transition-all ${mapStyle === 'light' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            className={`p-2.5 transition-all ${mapStyle === 'light' ? 'bg-[var(--color-primary)] text-black rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                             title="Positron"
                         >
                             <Sun size={16} />
                         </button>
                         <button
                             onClick={() => setMapStyle('voyager')}
-                            className={`p-2.5 rounded-lg transition-all ${mapStyle === 'voyager' ? 'bg-[var(--color-primary)] text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            className={`p-2.5 transition-all ${mapStyle === 'voyager' ? 'bg-[var(--color-primary)] text-black rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                             title="Voyager"
                         >
                             <Layers size={16} />
                         </button>
                         <button
                             onClick={() => setMapStyle('satellite')}
-                            className={`p-2.5 rounded-lg transition-all ${mapStyle === 'satellite' ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/30' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            className={`p-2.5 transition-all ${mapStyle === 'satellite' ? 'bg-[var(--color-primary)] text-black shadow-lg shadow-[var(--color-primary)]/30 rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                             title="Satellite"
                         >
                             <Globe size={16} />
@@ -1121,7 +1121,7 @@ export default function Home() {
 
                     <button
                         onClick={() => setIsSaveModalOpen(true)}
-                        className="flex items-center gap-2 bg-[var(--color-zen-neon)] text-black px-6 py-3 rounded-xl text-[12px] font-extrabold uppercase tracking-widest border border-transparent hover:bg-black hover:text-[var(--color-zen-neon)] hover:border-[var(--color-zen-neon)]/30 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--color-zen-neon)]/20"
+                        className="flex items-center gap-2 bg-[var(--color-zen-neon)] text-black px-6 py-3 rounded-none text-[12px] font-extrabold uppercase tracking-widest border border-transparent hover:bg-black hover:text-[var(--color-zen-neon)] hover:border-[var(--color-zen-neon)]/30 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--color-zen-neon)]/20"
                     >
                         <Save size={16} /> Save
                     </button>
@@ -1130,10 +1130,10 @@ export default function Home() {
 
                 {/* Day Navigation Bar (V4.4) */}
                 {schedule && schedule.length > 0 && (
-                    <div className="fixed top-24 left-[calc(50%+9rem)] -translate-x-1/2 z-[45] flex items-center gap-2 p-1.5 bg-[var(--color-surface-container-low)]/80 backdrop-blur-2xl rounded-2xl border border-white/5 shadow-2xl animate-in fade-in slide-in-from-top-4">
+                    <div className="fixed top-24 left-[calc(50%+9rem)] -translate-x-1/2 z-[45] flex items-center gap-2 p-1.5 bg-[var(--color-surface-container-low)]/80 backdrop-blur-2xl rounded-none border border-white/5 shadow-2xl animate-in fade-in slide-in-from-top-4">
                         <button
                             onClick={() => setSelectedDay('all')}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === 'all' ? 'bg-[var(--color-primary)] text-black shadow-[0_0_15px_var(--color-primary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                            className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === 'all' ? 'bg-[var(--color-primary)] text-black rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                         >
                             OVERVIEW
                         </button>
@@ -1142,7 +1142,7 @@ export default function Home() {
                             <button
                                 key={i}
                                 onClick={() => setSelectedDay(i)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === i ? 'bg-[var(--color-secondary)] text-black shadow-[0_0_15px_var(--color-secondary)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                                className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${selectedDay === i ? 'bg-[var(--color-secondary)] text-black rounded-xl' : 'text-white/40 hover:text-white hover:bg-white/5 rounded-none'}`}
                             >
                                 DAY {i + 1}
                             </button>
@@ -1191,7 +1191,7 @@ export default function Home() {
 
                 {/* Configuration Panel (V7.0 Zen Mode) */}
                 <div className={`absolute left-10 top-24 z-[100] flex flex-col gap-4 transition-all duration-500 ease-in-out ${isConfigExpanded ? 'bottom-10 w-[440px]' : 'w-48 h-14'}`}>
-                    <section className={`bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-[var(--color-outline-variant)]/10 transition-all duration-500 overflow-hidden ${isConfigExpanded ? 'flex flex-col h-full' : 'p-0 h-full flex items-center'}`}>
+                    <section className={`bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-none shadow-2xl border border-[var(--color-outline-variant)]/10 transition-all duration-500 overflow-hidden ${isConfigExpanded ? 'flex flex-col h-full' : 'p-0 h-full flex items-center'}`}>
                         {isConfigExpanded ? (
                             <div className="flex-1 overflow-y-auto p-7 flex flex-col gap-5 scrollbar-bounded">
                                 <div className="space-y-1">
@@ -1209,14 +1209,14 @@ export default function Home() {
                                         >
                                             <button
                                                 onClick={() => setIsAiOpen(!isAiOpen)}
-                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${isAiOpen ? 'bg-[var(--color-primary-container)] text-[var(--color-on-primary-container)] border-transparent shadow-[0_0_12px_var(--color-primary)]' : 'bg-transparent text-[var(--color-primary)] border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/10'}`}
+                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-none text-[10px] font-bold uppercase tracking-wider transition-all border ${isAiOpen ? 'bg-[var(--color-primary-container)] text-[var(--color-on-primary-container)] border-transparent shadow-[0_0_12px_var(--color-primary)]' : 'bg-transparent text-[var(--color-primary)] border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/10'}`}
                                             >
                                                 <Wand2 size={12} />
                                                 Magic
                                             </button>
                                             <button
                                                 onClick={handleClearAll}
-                                                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all group"
+                                                className="flex items-center gap-2 px-3 py-1.5 rounded-none text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all group"
                                                 title="Clear All Inputs"
                                             >
                                                 <RotateCcw size={12} className="group-hover:rotate-[-90deg] transition-transform" />
@@ -1224,7 +1224,7 @@ export default function Home() {
                                             </button>
                                             <button
                                                 onClick={() => setIsConfigExpanded(false)}
-                                                className="p-2 hover:bg-white/5 rounded-xl text-white/20 hover:text-white transition-all ml-1"
+                                                className="p-2 hover:bg-white/5 rounded-none text-white/20 hover:text-white transition-all ml-1"
                                                 title="Minimize"
                                             >
                                                 <Minimize2 size={16} />
@@ -1236,7 +1236,7 @@ export default function Home() {
                                     </div>
 
                                     {isAiOpen && (
-                                        <div className="mt-4 p-4 bg-[var(--color-surface-container-lowest)] rounded-2xl border border-[var(--color-primary)]/20 animate-in fade-in slide-in-from-top-2 relative overflow-hidden">
+                                        <div className="mt-4 p-4 bg-[var(--color-surface-container-lowest)] rounded-none border border-[var(--color-primary)]/20 animate-in fade-in slide-in-from-top-2 relative overflow-hidden">
                                             <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
                                                 <Sparkles size={48} className="text-[var(--color-primary)]" />
                                             </div>
@@ -1251,7 +1251,7 @@ export default function Home() {
                                                 <button
                                                     disabled={isAiParsing}
                                                     onClick={handleAiParse}
-                                                    className="bg-[var(--color-primary-container)] hover:bg-[var(--color-primary-fixed-dim)] text-[var(--color-on-primary-container)] text-[10px] font-extrabold px-4 py-2 rounded-xl transition-all flex items-center gap-2 shadow-lg active:scale-95"
+                                                    className="bg-[var(--color-primary-container)] hover:bg-[var(--color-primary-fixed-dim)] text-[var(--color-on-primary-container)] text-[10px] font-extrabold px-4 py-2 rounded-none transition-all flex items-center gap-2 shadow-lg active:scale-95"
                                                 >
                                                     {isAiParsing ? <Loader2 size={12} className="animate-spin" /> : 'Apply Magic'}
                                                 </button>
@@ -1265,7 +1265,7 @@ export default function Home() {
                                         <div className="space-y-1.5 relative">
                                             <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Trip Base City</label>
                                             <input
-                                                className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10"
+                                                className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none placeholder:text-white/10"
                                                 type="text"
                                                 placeholder="e.g. Tokyo"
                                                 value={baseCity}
@@ -1276,7 +1276,7 @@ export default function Home() {
                                                 }}
                                             />
                                             {activeSearch?.type === 'base' && (suggestions.length > 0 || searchLoading) && (
-                                                <div className="absolute top-full left-0 right-0 z-[110] mt-2 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/30 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                                                <div className="absolute top-full left-0 right-0 z-[110] mt-2 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/30 rounded-none shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
                                                     {searchLoading && (
                                                         <div className="p-3 text-xs text-gray-400 flex items-center gap-2">
                                                             <Loader2 className="animate-spin" size={12} /> Searching...
@@ -1296,9 +1296,9 @@ export default function Home() {
                                             )}
                                         </div>
                                         <div className="space-y-1.5 relative">
-                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-planner-green)]/70 uppercase ml-1">Stay Location</label>
+                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Stay Location</label>
                                             <input
-                                                className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-planner-green)]/50 focus:ring-4 focus:ring-[var(--color-planner-green)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none placeholder:text-white/10"
+                                                className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none placeholder:text-white/10"
                                                 type="text"
                                                 placeholder="e.g. Hilton Shinjuku"
                                                 value={accommodation}
@@ -1309,7 +1309,7 @@ export default function Home() {
                                                 }}
                                             />
                                             {activeSearch?.type === 'stay' && (suggestions.length > 0 || searchLoading) && (
-                                                <div className="absolute top-full left-0 right-0 z-[110] mt-2 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/30 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                                                <div className="absolute top-full left-0 right-0 z-[110] mt-2 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/30 rounded-none shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
                                                     {searchLoading && (
                                                         <div className="p-3 text-xs text-gray-400 flex items-center gap-2">
                                                             <Loader2 className="animate-spin" size={12} /> Searching...
@@ -1331,30 +1331,30 @@ export default function Home() {
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Starting Date</label>
-                                        <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                                        <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Days</label>
-                                        <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-2xl text-white transition-all outline-none" type="number" min={1} max={30} value={tripLength} onChange={e => setTripLength(parseInt(e.target.value) || 1)} />
+                                        <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none" type="number" min={1} max={30} value={tripLength} onChange={e => setTripLength(parseInt(e.target.value) || 1)} />
                                     </div>
                                     <div className="space-y-1.5 col-span-2 mt-1">
                                         <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Travel Mode</label>
-                                        <div className="grid grid-cols-3 bg-white/5 rounded-2xl p-1 gap-1 border border-white/10">
+                                        <div className="grid grid-cols-3 bg-white/5 rounded-none p-1 gap-1 border border-white/10">
                                             <button
                                                 onClick={() => setTransportMode('driving-car')}
-                                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'driving-car' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+                                                className={`flex items-center justify-center gap-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'driving-car' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg rounded-xl' : 'text-white/40 hover:bg-white/5 rounded-none'}`}
                                             >
                                                 <Car size={14} /> Car
                                             </button>
                                             <button
                                                 onClick={() => setTransportMode('foot-walking')}
-                                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'foot-walking' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+                                                className={`flex items-center justify-center gap-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'foot-walking' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg rounded-xl' : 'text-white/40 hover:bg-white/5 rounded-none'}`}
                                             >
                                                 <Footprints size={14} /> Walk
                                             </button>
                                             <button
                                                 onClick={() => setTransportMode('cycling-regular')}
-                                                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'cycling-regular' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+                                                className={`flex items-center justify-center gap-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${transportMode === 'cycling-regular' ? 'bg-[var(--color-zen-neon)] text-black shadow-lg rounded-xl' : 'text-white/40 hover:bg-white/5 rounded-none'}`}
                                             >
                                                 <Bike size={14} /> Bike
                                             </button>
@@ -1388,7 +1388,7 @@ export default function Home() {
                                                 const formatTime = (h: number, m: number) => `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 
                                                 return (
-                                                    <div key={dateStr} className="flex items-center gap-3 bg-white/5 p-2 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                                                    <div key={dateStr} className="flex items-center gap-3 bg-white/5 p-2 rounded-none border border-white/5 hover:border-white/10 transition-colors">
                                                         <span className="text-[10px] font-bold text-white/40 ml-2 w-16 uppercase tracking-wider">{d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}</span>
                                                         <input className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-center py-1 text-white font-mono outline-none" type="time" value={formatTime(hoursParams.start.hours, hoursParams.start.minutes)} onChange={(e) => handleActiveHoursChange(dateStr, 'start', e.target.value)} />
                                                         <div className="w-2 h-px bg-white/10"></div>
@@ -1415,7 +1415,7 @@ export default function Home() {
                                                 key={place.id}
                                                 value={place}
                                                 id={place.id}
-                                                className="bg-[var(--color-surface-container-high)] p-5 rounded-3xl border border-[var(--color-outline-variant)]/20 shadow-xl group hover:border-[var(--color-primary)]/30 transition-all cursor-pointer relative"
+                                                className="bg-[var(--color-surface-container-high)] p-5 rounded-none border border-[var(--color-outline-variant)]/20 shadow-xl group hover:border-[var(--color-primary)]/30 transition-all cursor-pointer relative"
                                             >
                                                 {/* Drag handle */}
                                                 <div className="absolute -left-3 top-1/2 -translate-y-1/2 p-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
@@ -1467,7 +1467,7 @@ export default function Home() {
                                                     )}
                                                 </div>
                                                 <div className="flex items-center justify-between gap-4 mt-2">
-                                                    <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                                                    <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-none border border-white/5">
                                                         <label className="text-[9px] font-bold tracking-widest text-white/40 uppercase">Duration</label>
                                                         <input
                                                             type="number"
@@ -1514,7 +1514,7 @@ export default function Home() {
                                         </label>
                                         <button
                                             onClick={handleInspireMe}
-                                            className="text-[var(--color-planner-green)] hover:text-white text-[10px] font-bold transition-all flex items-center gap-1 bg-[var(--color-planner-green)]/10 px-2 py-1 rounded-md"
+                                            className="text-[var(--color-planner-green)] hover:text-white text-[10px] font-bold transition-all flex items-center gap-1 bg-[var(--color-planner-green)]/10 px-2 py-1 rounded-none"
                                         >
                                             <Sparkle size={10} />
                                             Inspire Me
@@ -1530,13 +1530,13 @@ export default function Home() {
                                                 onChange={(e) => setInterest(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && handleDiscover()}
                                                 placeholder="What are you in the mood for? (e.g. Art, Coffee, Landmarks)"
-                                                className="w-full bg-white/5 border border-white/5 rounded-xl pl-9 pr-4 py-2 text-[11px] text-white placeholder-white/20 focus:border-[var(--color-secondary)]/50 focus:bg-white/[0.08] outline-none transition-all"
+                                                className="w-full bg-white/5 border border-white/5 rounded-none pl-9 pr-4 py-2 text-[11px] text-white placeholder-white/20 focus:border-[var(--color-secondary)]/50 focus:bg-white/[0.08] outline-none transition-all"
                                             />
                                         </div>
                                         <button
                                             onClick={handleDiscover}
                                             disabled={isRecommending || !interest}
-                                            className="bg-white/5 hover:bg-white/10 text-white/60 hover:text-white px-3 py-2 rounded-xl border border-white/5 hover:border-white/20 text-[10px] font-bold transition-all uppercase tracking-tighter disabled:opacity-30 disabled:pointer-events-none"
+                                            className="bg-white/5 hover:bg-white/10 text-white/60 hover:text-white px-3 py-2 rounded-none border border-white/5 hover:border-white/20 text-[10px] font-bold transition-all uppercase tracking-tighter disabled:opacity-30 disabled:pointer-events-none"
                                         >
                                             Search
                                         </button>
@@ -1545,7 +1545,7 @@ export default function Home() {
                                     {isRecommending && (
                                         <div className="space-y-2 animate-pulse px-1">
                                             {[1, 2, 3].map((i) => (
-                                                <div key={i} className="h-14 bg-white/5 rounded-2xl border border-white/5" />
+                                                <div key={i} className="h-14 bg-white/5 rounded-none border border-white/5" />
                                             ))}
                                             <p className="text-[9px] text-white/20 text-center animate-bounce uppercase tracking-widest font-bold mt-2">Searching...</p>
                                         </div>
@@ -1557,7 +1557,7 @@ export default function Home() {
                                                 <div
                                                     key={poi.id}
                                                     onClick={() => setSelectedEnrichment(poi)}
-                                                    className={`group relative bg-white/5 rounded-2xl border transition-all cursor-pointer overflow-hidden ${selectedEnrichment?.id === poi.id ? 'border-[var(--color-planner-green)] bg-white/10 shadow-[0_0_20px_rgba(83,225,111,0.1)]' : 'border-white/10 hover:border-[var(--color-legacy-blue)]/50 hover:bg-[var(--color-legacy-blue)]/5'}`}
+                                                    className={`group relative bg-white/5 rounded-none border transition-all cursor-pointer overflow-hidden ${selectedEnrichment?.id === poi.id ? 'border-[var(--color-planner-green)] bg-white/10 shadow-[0_0_20px_rgba(83,225,111,0.1)]' : 'border-white/10 hover:border-[var(--color-legacy-blue)]/50 hover:bg-[var(--color-legacy-blue)]/5'}`}
                                                 >
                                                     {poi.photo && (
                                                         <div className="h-28 w-full overflow-hidden">
@@ -1565,7 +1565,7 @@ export default function Home() {
                                                             <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--color-surface-container-lowest)] via-[var(--color-surface-container-lowest)]/30 to-transparent z-10" />
                                                             <div className="progressive-blur-bottom" />
                                                             <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/60 to-transparent p-3">
-                                                                <span className="text-[8px] font-black uppercase tracking-widest text-white/80 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/5">Wikimedia Photo</span>
+                                                                <span className="text-[8px] font-black uppercase tracking-widest text-white/80 bg-black/40 px-2 py-0.5 rounded-none backdrop-blur-sm border border-white/5">Wikimedia Photo</span>
                                                             </div>
                                                         </div>
                                                     )}
@@ -1573,7 +1573,7 @@ export default function Home() {
                                                         <div className="flex justify-between items-start gap-2 mb-2">
                                                             <h4 className="text-sm font-bold text-white group-hover:text-[var(--color-legacy-blue)] transition-colors line-clamp-1">{poi.name}</h4>
                                                             {poi.opening_hours && (
-                                                                <div className="shrink-0 flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded-md border border-white/5">
+                                                                <div className="shrink-0 flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded-none border border-white/5">
                                                                     <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-planner-green)] animate-pulse" />
                                                                     <span className="text-[8px] font-bold text-white/60 truncate max-w-[60px]">{getOpenStatus(poi.opening_hours).message}</span>
                                                                 </div>
@@ -1583,12 +1583,12 @@ export default function Home() {
                                                         <div className="flex items-center gap-2">
                                                             <button
                                                                 onClick={() => handleAddRecommended(poi)}
-                                                                className="flex-1 bg-[var(--color-primary)] text-black text-[10px] font-bold py-2 rounded-xl active:scale-95 transition-all"
+                                                                className="flex-1 bg-[var(--color-primary)] text-black text-[10px] font-bold py-2 rounded-none active:scale-95 transition-all"
                                                             >
                                                                 Add to Plan
                                                             </button>
                                                             {poi.website && (
-                                                                <a href={poi.website} target="_blank" rel="noopener noreferrer" className="bg-white/10 p-2 rounded-xl text-white/40 hover:text-[var(--color-primary)] transition-colors border border-white/5">
+                                                                <a href={poi.website} target="_blank" rel="noopener noreferrer" className="bg-white/10 p-2 rounded-none text-white/40 hover:text-[var(--color-primary)] transition-colors border border-white/5">
                                                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
                                                                 </a>
                                                             )}
@@ -1609,9 +1609,21 @@ export default function Home() {
                                 <button
                                     onClick={handlePlanTour}
                                     disabled={isPlanning}
-                                    className="mt-auto w-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] text-[var(--color-on-primary-container)] font-extrabold py-4 rounded-full shadow-[0_12px_24px_-8px_rgba(75,142,255,0.4)] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    className="mt-auto w-full group relative overflow-hidden bg-black/40 border border-[var(--color-primary)]/50 text-[var(--color-primary)] font-mono font-black py-5 rounded-none transition-all active:scale-[0.98] flex items-center justify-center gap-3 hover:bg-[var(--color-primary)] hover:text-[#003907] shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.1)]"
                                 >
-                                    {isPlanning ? <><Loader2 className="animate-spin" size={18} /> Routing...</> : 'Generate Optimized Itinerary'}
+                                    {/* Scanline hover effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                                    
+                                    <span className="text-sm uppercase tracking-[0.25em]">
+                                        {isPlanning ? (
+                                            <span className="flex items-center gap-3">
+                                                <Loader2 className="animate-spin" size={16} /> 
+                                                RUNNING_OPTIMIZER...
+                                            </span>
+                                        ) : 'Generate Optimized Itinerary'}
+                                    </span>
+
+                                    <div className="w-1.5 h-3.5 bg-[var(--color-primary)]/50 animate-pulse ml-1 group-hover:bg-[#003907]" />
                                 </button>
                             </div>
                         ) : (
@@ -1632,7 +1644,7 @@ export default function Home() {
                 {/* Right Side Context Cards (Schedule) (V7.0 Zen Mode) */}
                 {schedule && schedule.length > 0 && (
                     <div className={`absolute right-10 top-24 z-[100] flex flex-col gap-4 transition-all duration-500 ease-in-out ${isPlanExpanded ? 'bottom-10 w-96' : 'w-48 h-14'}`}>
-                        <div className={`bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-3xl border border-[var(--color-outline-variant)]/10 shadow-2xl transition-all duration-500 overflow-hidden ${isPlanExpanded ? 'p-6 flex-1 overflow-y-auto scrollbar-bounded' : 'p-0 h-full flex items-center'}`}>
+                        <div className={`bg-[var(--color-surface-container-high)]/80 backdrop-blur-xl rounded-none border border-[var(--color-outline-variant)]/10 shadow-2xl transition-all duration-500 overflow-hidden ${isPlanExpanded ? 'p-6 flex-1 overflow-y-auto scrollbar-bounded' : 'p-0 h-full flex items-center'}`}>
                             {isPlanExpanded ? (
                                 <>
                                     <h2 className="text-xl font-bold text-[var(--color-on-surface)] mb-6 flex items-center justify-between gap-2">
@@ -1643,7 +1655,7 @@ export default function Home() {
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => setIsPlanExpanded(false)}
-                                                className="p-1.5 hover:bg-white/5 rounded-lg text-white/20 hover:text-white transition-all mr-1"
+                                                className="p-1.5 hover:bg-white/5 rounded-none text-white/20 hover:text-white transition-all mr-1"
                                                 title="Minimize"
                                             >
                                                 <Minimize2 size={16} />
@@ -1652,13 +1664,13 @@ export default function Home() {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => schedule && exportToCsv(schedule)}
-                                                className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-xl hover:bg-[var(--color-legacy-blue)] hover:text-black transition-all shadow-lg active:scale-95"
+                                                className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-none hover:bg-[var(--color-legacy-blue)] hover:text-black transition-all shadow-lg active:scale-95"
                                             >
                                                 CSV
                                             </button>
                                             <button
                                                 onClick={() => schedule && exportToIcal(schedule)}
-                                                className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-xl hover:bg-[var(--color-legacy-blue)] hover:text-black transition-all shadow-lg active:scale-95"
+                                                className="text-[10px] font-bold tracking-wider bg-white/5 border border-white/10 px-4 py-2 rounded-none hover:bg-[var(--color-legacy-blue)] hover:text-black transition-all shadow-lg active:scale-95"
                                             >
                                                 ICAL
                                             </button>
