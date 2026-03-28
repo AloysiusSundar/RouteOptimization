@@ -37,7 +37,7 @@ export default function LandingPage() {
                         PROJECT_STATUS // <span className="text-zen-neon">PRODUCTION_STABLE</span>
                     </div>
                     <div className="flex gap-8 pointer-events-auto">
-                        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-zen-dark hover:text-zen-neon transition-colors">
+                        <a href="https://github.com/AloysiusSundar" target="_blank" rel="noopener noreferrer" className="text-zen-dark hover:text-zen-neon transition-colors">
                             <GitBranch size={18} />
                         </a>
                     </div>
@@ -110,7 +110,7 @@ export default function LandingPage() {
                                     </button>
                                 </Link>
 
-                                <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto">
+                                <a href="https://github.com/AloysiusSundar/RouteOptimization/tree/main" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto">
                                     <button className="w-full md:w-auto bg-transparent border border-zen-neon/30 text-zen-neon px-12 py-5 font-mono font-bold text-sm uppercase tracking-widest hover:bg-zen-neon/5 active:scale-[0.99] transition-all flex items-center justify-center gap-3 group">
                                         <GitBranch size={16} />
                                         VIEW_SOURCE
@@ -297,7 +297,7 @@ export default function LandingPage() {
                     <div className="flex flex-wrap gap-12 my-10 md:my-0">
                         <div className="flex flex-col gap-2">
                             <span className="font-mono text-[9px] text-zen-dark uppercase tracking-tighter">DEVELOPER</span>
-                            <a className="text-zen-light font-mono text-[10px] tracking-widest hover:text-zen-neon transition-colors uppercase font-bold" href="#">Aloysius Sundar</a>
+                            <a className="text-zen-light font-mono text-[10px] tracking-widest hover:text-zen-neon transition-colors uppercase font-bold" href="https://x.com/aloysiusbarb" target="_blank" rel="noopener noreferrer">Aloysius Sundar</a>
                         </div>
                         <div className="flex flex-col gap-2">
                             <span className="font-mono text-[9px] text-zen-dark uppercase tracking-tighter">PROJECT</span>
@@ -305,7 +305,7 @@ export default function LandingPage() {
                         </div>
                         <div className="flex flex-col gap-2">
                             <span className="font-mono text-[9px] text-zen-dark uppercase tracking-tighter">REPOSITORY</span>
-                            <a className="text-zen-light font-mono text-[10px] tracking-widest hover:text-zen-neon transition-colors uppercase font-bold" href="#">Github_Access</a>
+                            <a className="text-zen-light font-mono text-[10px] tracking-widest hover:text-zen-neon transition-colors uppercase font-bold" href="https://github.com/AloysiusSundar/RouteOptimization" target="_blank" rel="noopener noreferrer">Github_Access</a>
                         </div>
                     </div>
 
