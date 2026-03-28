@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import Globe from '@/components/Globe';
 import {
     Terminal,
     Settings,
@@ -121,19 +122,19 @@ export default function LandingPage() {
                             </div>
                             <div className="lg:col-span-7">
                                 <p className="font-mono text-zen-dark text-xl leading-relaxed mb-8">
-                                    Built for absolute precision. Yathir leverages a custom-tuned <span className="text-zen-light underline decoration-zen-neon/30 underline-offset-4 font-bold">Dijkstra variant</span> optimized for multi-modal travel sets.
+                                    Yathir.ai merges high-dimensional vector intelligence with a deterministic <span className="text-zen-light underline decoration-zen-neon/30 underline-offset-4 font-bold">Held-Karp</span> routing engine. The system dynamically evaluates massive spatial matrices to compute exact solutions for multi-day, multi-stop circuits.
                                 </p>
                                 <p className="font-mono text-zen-dark text-xl leading-relaxed">
-                                    By mapping over 1.2M nodes into a high-dimensional vector space, we achieve sub-milli latency in pathfinding—delivering raw technical efficiency where traditional routing fails.
+                                    By strictly enforcing topological time-windows alongside semantic location matching, this hybrid architecture delivers mathematically perfect, context-aware itineraries.
                                 </p>
                                 <div className="mt-12 grid grid-cols-2 gap-8">
                                     <div>
-                                        <div className="text-zen-neon font-mono text-[10px] mb-2 font-bold tracking-tighter">LATENCY</div>
-                                        <div className="text-zen-light text-2xl font-bold font-mono tracking-tighter">&lt; 14ms</div>
+                                        <div className="text-zen-neon font-mono text-[10px] mb-2 font-bold tracking-tighter">SPACE</div>
+                                        <div className="text-zen-light text-2xl font-bold font-mono tracking-tighter">O(n 2ⁿ)</div>
                                     </div>
                                     <div>
                                         <div className="text-zen-neon font-mono text-[10px] mb-2 font-bold tracking-tighter">COMPLEXITY</div>
-                                        <div className="text-zen-light text-2xl font-bold font-mono tracking-tighter">O(E log V)</div>
+                                        <div className="text-zen-light text-2xl font-bold font-mono tracking-tighter">O(n² 2ⁿ)</div>
                                     </div>
                                 </div>
                             </div>
@@ -160,8 +161,8 @@ export default function LandingPage() {
                                             <Cpu size={48} strokeWidth={1} />
                                         </div>
                                         <div className="font-mono text-[10px] text-zen-neon mb-3 font-bold">[ CORE_PROC ]</div>
-                                        <h3 className="font-headline text-2xl font-bold text-zen-light mb-6 uppercase text-pretty leading-none">Predictive <br />Routing</h3>
-                                        <p className="text-base text-zen-dark leading-relaxed">Asynchronous pathfinding engine that anticipates traffic density through historical nodal analysis.</p>
+                                        <h3 className="font-headline text-2xl font-bold text-zen-light mb-6 uppercase text-pretty leading-none">Topological <br />Scheduling</h3>
+                                        <p className="text-base text-zen-dark leading-relaxed">Treating time as a strict topological dimension, the TSPTW architecture locks reservations as immutable graph anchors. By syncing parallel traffic fetches across all route legs, it mathematically eliminates schedule drift and guarantees nodal efficiency.</p>
                                     </div>
                                     <div className="text-zen-neon font-mono text-[10px] tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-0 flex items-center gap-2">
                                         ALGO_DETAILS &gt;
@@ -177,12 +178,12 @@ export default function LandingPage() {
                                         <div className="mb-10 text-zen-dark group-hover:text-zen-neon transition-colors duration-0">
                                             <Search size={48} strokeWidth={1} />
                                         </div>
-                                        <div className="font-mono text-[10px] text-zen-neon mb-3 font-bold">[ VEC_SEARCH ]</div>
-                                        <h3 className="font-headline text-2xl font-bold text-zen-light mb-6 uppercase text-pretty leading-none">Semantic <br />Indexing</h3>
-                                        <p className="text-base text-zen-dark leading-relaxed">Neural indexing of destination metadata allowing for vague or conceptual search parameters.</p>
+                                        <div className="font-mono text-[10px] text-zen-neon mb-3 font-bold">[ CLUS_LAYER ]</div>
+                                        <h3 className="font-headline text-2xl font-bold text-zen-light mb-6 uppercase text-pretty leading-none">Geospatial <br />Load Balancing</h3>
+                                        <p className="text-base text-zen-dark leading-relaxed">Yathir.ai segments geographic markers into logical "Daily Sectors," using the accommodation as a priority centroid. This constraint-aware clustering minimizes overhead and enforces realistic travel pacing.</p>
                                     </div>
                                     <div className="text-zen-neon font-mono text-[10px] tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-0 flex items-center gap-2">
-                                        MODEL_STATS &gt;
+                                        CLUSTER_STATS &gt;
                                     </div>
                                 </motion.div>
                                 {/* Module 3 */}
@@ -195,61 +196,65 @@ export default function LandingPage() {
                                         <div className="mb-10 text-zen-dark group-hover:text-zen-neon transition-colors duration-0">
                                             <Fingerprint size={48} strokeWidth={1} />
                                         </div>
-                                        <div className="font-mono text-[10px] text-zen-neon mb-3 font-bold">[ SEC_LAYER ]</div>
-                                        <h3 className="font-headline text-2xl font-bold text-zen-light mb-6 uppercase text-pretty leading-none">Hardware <br />Security</h3>
-                                        <p className="text-base text-zen-dark leading-relaxed">AES-256-GCM encryption for all user travel itineraries and biometric verification nodes.</p>
+                                        <div className="font-mono text-[10px] text-zen-neon mb-3 font-bold">[ VEC_SEARCH ]</div>
+                                        <h3 className="font-headline text-2xl font-bold text-zen-light mb-6 uppercase text-pretty leading-none">Semantic <br />Search</h3>
+                                        <p className="text-base text-zen-dark leading-relaxed">High-dimensional vector orchestration via Cohere V3.0. The engine executes dot-product similarity analysis across a 1536-D latent space, enabling zero-shot conceptual discovery by mapping natural language intent directly to geospatial metadata.</p>
                                     </div>
                                     <div className="text-zen-neon font-mono text-[10px] tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-0 flex items-center gap-2">
-                                        LINK_SECURE &gt;
+                                        MODEL_STATS &gt;
                                     </div>
                                 </motion.div>
                             </div>
                         </div>
                     </section>
-
-                    {/* Real-Time Nodal Visualizer */}
+                    {/* Real-Time AI Orchestration Visualizer */}
                     <section className="py-40 px-6 lg:px-20 relative bg-zen-surface-low border-t border-zen-dark/15">
                         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-20">
                             <div className="lg:w-2/5 flex flex-col justify-center">
-                                <div className="font-mono text-[10px] text-zen-dark mb-10 uppercase tracking-widest font-bold">OP_FEED // REALTIME</div>
-                                <h2 className="font-headline text-5xl font-bold text-zen-light mb-8 uppercase text-pretty leading-[1.1]">Global Nodal <br />Intelligence.</h2>
-                                <p className="text-zen-dark text-base mb-14 leading-relaxed max-w-md">Our global network monitors 1.2M vector points. This map visualizes real-time handshakes between the Yathir core and distributed edge nodes.</p>
+                                <div className="font-mono text-[10px] text-zen-dark mb-10 uppercase tracking-widest font-bold">OP_FEED // AI_ORCHESTRATION</div>
+                                <h2 className="font-headline text-5xl font-bold text-zen-light mb-8 uppercase text-pretty leading-[1.1]">Natural Language <br />Processing.</h2>
+                                <p className="text-zen-dark text-base mb-14 leading-relaxed max-w-md">Yaathir.ai uses Gemini 3.1 Flash-Lite to turn messy travel ideas into structured data. It handles the boring stuff like dates, locations, and reservations, so the engine can focus on building the perfect route for you.</p>
 
                                 <div className="space-y-6">
                                     <div className="flex justify-between items-center py-3 border-b border-zen-dark/10">
-                                        <span className="font-mono text-[10px] text-zen-dark uppercase tracking-widest">Active_Nodes</span>
-                                        <span className="font-mono text-xs text-zen-neon font-bold tracking-tighter">1,244,092</span>
+                                        <span className="font-mono text-[10px] text-zen-dark uppercase tracking-widest">Token_Compliance</span>
+                                        <span className="font-mono text-xs text-zen-neon font-bold tracking-tighter">99.4%</span>
                                     </div>
                                     <div className="flex justify-between items-center py-3 border-b border-zen-dark/10">
-                                        <span className="font-mono text-[10px] text-zen-dark uppercase tracking-widest">System_Health</span>
-                                        <span className="font-mono text-xs text-zen-neon font-bold tracking-tighter">NOMINAL</span>
+                                        <span className="font-mono text-[10px] text-zen-dark uppercase tracking-widest">Inference_Model</span>
+                                        <span className="font-mono text-xs text-zen-neon font-bold tracking-tighter">GEMINI_3.1_FLASH</span>
                                     </div>
                                     <div className="flex justify-between items-center py-3">
-                                        <span className="font-mono text-[10px] text-zen-dark uppercase tracking-widest">Global_Latency</span>
-                                        <span className="font-mono text-xs text-zen-neon font-bold tracking-tighter">18ms AVG</span>
+                                        <span className="font-mono text-[10px] text-zen-dark uppercase tracking-widest">Latent_Accuracy</span>
+                                        <span className="font-mono text-xs text-zen-neon font-bold tracking-tighter">HIGH_PRECISION</span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="lg:w-3/5 h-[650px] bg-zen-bg ghost-border overflow-hidden relative group">
-                                <img
-                                    alt="Technical map visualization"
-                                    className="w-full h-full object-cover grayscale brightness-50 contrast-125 opacity-30 group-hover:opacity-50 transition-opacity duration-1000"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgMAx07Gm4rNJ8s0B4xtQfxaz78Vu-hrN6gj03SxlOASfFkfsTV7gYmlMSvZ07_LTx3OfL1gilRof5oGGdOII_q96IjouvbyIaRd709_s3Z-QCZdTAPshCHoPpPQVjdjjFCu7qYbZpm6w1Lgp6ToLfohvgXUc6FqzTQWilGkeResfakkwuCm1duP_Z6znkk3tKLCwJ4Rcl93_w7_uX2FGifdZugWPfC8xZxProy28z26O1Vd3PJ8F1drJuz5gPBBCP-Lqjqsnz1rFr"
-                                />
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_#050505_100%)] pointer-events-none"></div>
+                            <div className="lg:w-3/5 h-[650px] overflow-hidden relative group">
+                                <Globe />
 
-                                {/* Scanning Effect */}
-                                <div className="absolute top-0 left-0 w-full h-[2px] bg-zen-neon/20 shadow-[0_0_15px_#00FF41] animate-[scan_4s_linear_infinite]"></div>
+                                {/* Parsing Animation Overlay (Representation) */}
+                                <div className="absolute inset-0 p-12 overflow-hidden pointer-events-none opacity-40">
+                                    <pre className="text-zen-neon font-mono text-[8px] leading-relaxed">
+                                        {`{
+  "intent": "itinerary_generation",
+  "entities": [
+    { "type": "location", "value": "Tokyo", "res": "GEOSPATIAL_LOCKED" },
+    { "type": "temporal", "value": "Next Week", "res": "2024-04-05" }
+  ],
+  "schema": "STRICT_JSON_V4",
+  "tokens": 428,
+  "status": "VALID_PARSE"
+}`}
+                                    </pre>
+                                </div>
 
-                                {/* Node Indicators */}
-                                <div className="absolute top-[30%] left-[25%] w-2 h-2 bg-zen-neon animate-pulse shadow-[0_0_10px_#00FF41]"></div>
-                                <div className="absolute top-[45%] left-[65%] w-2 h-2 bg-zen-neon animate-pulse shadow-[0_0_10px_#00FF41] delay-700"></div>
-                                <div className="absolute top-[60%] left-[40%] w-2 h-2 bg-zen-neon animate-pulse shadow-[0_0_10px_#00FF41] delay-300"></div>
+
 
                                 <div className="absolute bottom-10 right-10 font-mono text-[10px] text-zen-neon bg-zen-bg/80 backdrop-blur-md p-5 border border-zen-neon/30 uppercase tracking-widest leading-relaxed">
-                                    <span className="text-zen-dark">COORD:</span> 34.0522, -118.2437<br />
-                                    <span className="text-zen-dark">STATUS:</span> NODE_RESOLVED<br />
-                                    <span className="text-zen-dark">PKT_LOSS:</span> 0.00%
+                                    <span className="text-zen-dark">INPUT:</span> SCHEMA_EXTRACTION<br />
+                                    <span className="text-zen-dark">STAGE:</span> ENTITY_LOCK<br />
+                                    <span className="text-zen-dark">TRUST:</span> 99.8% RESOLVED
                                 </div>
                             </div>
                         </div>
