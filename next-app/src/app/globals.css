@@ -137,6 +137,7 @@ body {
   background-color: var(--color-background);
   color: var(--color-on-surface);
   font-family: var(--font-body);
+  color-scheme: dark;
 }
 
 

@@ -7,7 +7,7 @@ import { Place as SchedulePlace, ScheduleStop, generateSchedule, ActiveHours } f
 import { optimizeRoute } from '@/lib/TspSolver';
 import { getCoordinates, getDurationsMatrix, getRoutePolyline, getAutocompleteSuggestions } from '@/lib/orsClient';
 import { getTomTomDurationsMatrix, getTomTomLegDetails } from '@/lib/tomtomClient';
-import { Loader2, Search, Wand2, Sparkles, ChevronDown, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab, Moon, Layers, CloudFog, CloudDrizzle, CloudRain, CloudLightning, CloudSnow, Wind, Cloud, Sun, Home as HomeIcon } from 'lucide-react';
+import { Loader2, Search, Wand2, Sparkles, ChevronDown, ChevronUp, MapPin, Plus, Sparkle, Clock, Car, Footprints, Bike, Globe, Activity, Route, CalendarCheck, Minimize2, Maximize2, Save, Trash2, Map, Calendar, RotateCcw, Grab, Moon, Layers, CloudFog, CloudDrizzle, CloudRain, CloudLightning, CloudSnow, Wind, Cloud, Sun, Home as HomeIcon } from 'lucide-react';
 import { fetchNearbyPOIs, rankPOIs, POI } from '@/lib/RecommendationEngine';
 import { clusterPlaces } from '@/lib/Clusterer';
 import { exportToCsv, exportToIcal } from '@/lib/ExportUtils';
@@ -239,6 +239,20 @@ export default function Home() {
                 [field]: { hours, minutes }
             }
         }));
+    };
+
+    const shiftActiveHours = (dateStr: string, field: 'start' | 'end', deltaMinutes: number) => {
+        const current = activeHours[dateStr][field];
+        let totalMinutes = current.hours * 60 + current.minutes + deltaMinutes;
+
+        // Clamp to 00:00 - 23:59
+        if (totalMinutes < 0) totalMinutes = 0;
+        if (totalMinutes > 1439) totalMinutes = 1439;
+
+        const newHours = Math.floor(totalMinutes / 60);
+        const newMinutes = totalMinutes % 60;
+        const timeStr = `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+        handleActiveHoursChange(dateStr, field, timeStr);
     };
 
     const handleAddPlace = () => {
@@ -748,7 +762,7 @@ export default function Home() {
             {/* SideNavBar Shell */}
             <aside className="h-screen w-72 fixed left-0 top-0 border-r border-[var(--color-outline-variant)]/15 bg-[var(--color-surface-container-lowest)]/70 backdrop-blur-lg flex flex-col z-50">
                 <div className="px-6 pt-8 mb-10 shrink-0">
-                    <h1 className="text-xl font-bold tracking-tighter text-[var(--color-on-surface)] font-headline">Yathir.ai</h1>
+                    <h1 className="text-xl font-bold tracking-tighter text-[var(--color-on-surface)] font-headline">YATHIR.AI</h1>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-secondary)] font-semibold mt-1">AI Concierge</p>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
@@ -897,43 +911,43 @@ export default function Home() {
                     </nav>
 
                     {/* Trip Analytics (V6.7) */}
-                    <div className="mt-auto border-t border-white/5 bg-black/20 p-6 space-y-5 animate-in slide-in-from-bottom-4 fade-in duration-1000">
+                    <div className="mt-auto border-t border-white/10 bg-black/40 p-6 space-y-5 animate-in slide-in-from-bottom-4 fade-in duration-1000">
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] animate-pulse" />
-                            <span className="text-xs font-mono font-bold tracking-[0.2em] text-white/50 uppercase">Trip Analytics</span>
+                            <div className="w-1.5 h-1.5 rounded-none bg-[var(--color-zen-neon)] animate-pulse" />
+                            <span className="text-xs font-mono font-black tracking-[0.3em] text-[var(--color-zen-neon)] uppercase">Trip Analytics</span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-white/5 p-3 rounded-none border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-primary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
-                                <div className="flex items-center gap-2 text-[var(--color-primary)] opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-white/5 p-4 rounded-none border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-zen-neon)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                                <div className="flex items-center gap-2 text-[var(--color-zen-neon)] opacity-60 group-hover:opacity-100 transition-opacity">
                                     <MapPin size={12} />
-                                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Stops</span>
+                                    <span className="text-[9px] font-mono font-bold uppercase tracking-widest">Stops</span>
                                 </div>
-                                <div className="text-lg font-black text-white">{analytics.stops}</div>
+                                <div className="text-xl font-black text-white font-mono">{analytics.stops}</div>
                             </div>
 
-                            <div className="bg-white/5 p-3 rounded-none border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-secondary)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
-                                <div className="flex items-center gap-2 text-[var(--color-secondary)] opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-white/5 p-4 rounded-none border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-zen-neon)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                                <div className="flex items-center gap-2 text-[var(--color-zen-neon)] opacity-60 group-hover:opacity-100 transition-opacity">
                                     <Clock size={12} />
-                                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Hours</span>
+                                    <span className="text-[9px] font-mono font-bold uppercase tracking-widest">Hours</span>
                                 </div>
-                                <div className="text-lg font-black text-white">{analytics.hours}</div>
+                                <div className="text-xl font-black text-white font-mono">{analytics.hours}</div>
                             </div>
 
-                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-blue-400/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
-                                <div className="flex items-center gap-2 text-blue-400 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-white/5 p-4 rounded-none border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-zen-neon)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                                <div className="flex items-center gap-2 text-[var(--color-zen-neon)] opacity-60 group-hover:opacity-100 transition-opacity">
                                     <Route size={12} />
-                                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Distance</span>
+                                    <span className="text-[9px] font-mono font-bold uppercase tracking-widest">Distance</span>
                                 </div>
-                                <div className="text-lg font-black text-white">{analytics.distance} <span className="text-[10px] text-white/40">km</span></div>
+                                <div className="text-xl font-black text-white font-mono">{analytics.distance} <span className="text-[10px] text-white/40 font-mono">km</span></div>
                             </div>
 
-                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 space-y-1 hover:-translate-y-1 hover:border-purple-400/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
-                                <div className="flex items-center gap-2 text-purple-400 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-white/5 p-4 rounded-none border border-white/5 space-y-1 hover:-translate-y-1 hover:border-[var(--color-zen-neon)]/40 hover:bg-white/10 transition-all duration-300 cursor-default group">
+                                <div className="flex items-center gap-2 text-[var(--color-zen-neon)] opacity-60 group-hover:opacity-100 transition-opacity">
                                     <CalendarCheck size={12} />
-                                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest">Bookings</span>
+                                    <span className="text-[9px] font-mono font-bold uppercase tracking-widest">Bookings</span>
                                 </div>
-                                <div className="text-lg font-black text-white">{analytics.reservations}</div>
+                                <div className="text-xl font-black text-white font-mono">{analytics.reservations}</div>
                             </div>
                         </div>
 
@@ -948,13 +962,13 @@ export default function Home() {
                                         <div
                                             key={res.id || `${res.name}-${res.date}-${res.time}`}
                                             onClick={() => res.latlon && handleSpotlight(res.name, res.latlon[0], res.latlon[1])}
-                                            className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center justify-between group/res hover:bg-white/5 hover:border-[var(--color-zen-neon)]/30 hover:-translate-y-0.5 transition-all cursor-pointer shadow-lg active:scale-[0.98]"
+                                            className="bg-black/20 p-4 rounded-none border border-white/5 flex items-center justify-between group/res hover:bg-white/5 hover:border-[var(--color-zen-neon)]/30 hover:-translate-y-0.5 transition-all cursor-pointer shadow-lg active:scale-[0.98]"
                                         >
                                             <div className="space-y-0.5">
-                                                <div className="text-[11px] font-bold text-[var(--color-zen-neon)] group-hover/res:text-white transition-colors line-clamp-1">{res.name}</div>
-                                                <div className="text-[9px] text-white/40 uppercase tracking-wider">{res.date}</div>
+                                                <div className="text-[11px] font-mono font-bold text-[var(--color-zen-neon)] group-hover/res:text-white transition-colors line-clamp-1">{res.name}</div>
+                                                <div className="text-[9px] font-mono text-white/40 uppercase tracking-widest">{res.date}</div>
                                             </div>
-                                            <div className="text-[10px] font-mono font-bold text-[var(--color-zen-neon)] bg-[var(--color-zen-neon)]/10 px-2 py-1 rounded-lg group-hover/res:bg-[var(--color-zen-neon)] group-hover/res:text-black transition-all">
+                                            <div className="text-[10px] font-mono font-black text-[var(--color-zen-neon)] bg-[var(--color-zen-neon)]/10 px-3 py-1.5 rounded-none border border-[var(--color-zen-neon)]/20 group-hover/res:bg-[var(--color-zen-neon)] group-hover/res:text-black transition-all">
                                                 {res.time}
                                             </div>
                                         </div>
@@ -1263,7 +1277,7 @@ export default function Home() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="col-span-2 grid grid-cols-2 gap-3">
                                         <div className="space-y-1.5 relative">
-                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Trip Base City</label>
+                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/90 uppercase ml-1">Trip Base City</label>
                                             <input
                                                 className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none placeholder:text-white/10"
                                                 type="text"
@@ -1296,7 +1310,7 @@ export default function Home() {
                                             )}
                                         </div>
                                         <div className="space-y-1.5 relative">
-                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Stay Location</label>
+                                            <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/90 uppercase ml-1">Stay Location</label>
                                             <input
                                                 className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none placeholder:text-white/10"
                                                 type="text"
@@ -1329,16 +1343,25 @@ export default function Home() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Starting Date</label>
-                                        <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                                    <div className="space-y-1.5 relative group">
+                                        <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/90 uppercase ml-1">Starting Date</label>
+                                        <div className="relative">
+                                            <input
+                                                className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-4 [&::-webkit-calendar-picker-indicator]:w-6 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-10"
+                                                type="date"
+                                                value={startDate}
+                                                onClick={(e) => e.currentTarget.showPicker()}
+                                                onChange={e => setStartDate(e.target.value)}
+                                            />
+                                            <Calendar size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-primary)] pointer-events-none group-hover:scale-110 transition-transform" />
+                                        </div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Days</label>
+                                        <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/90 uppercase ml-1">Days</label>
                                         <input className="w-full bg-white/5 border border-white/10 focus:border-[var(--color-primary)]/50 focus:ring-4 focus:ring-[var(--color-primary)]/10 text-sm px-4 py-2.5 rounded-none text-white transition-all outline-none" type="number" min={1} max={30} value={tripLength} onChange={e => setTripLength(parseInt(e.target.value) || 1)} />
                                     </div>
                                     <div className="space-y-1.5 col-span-2 mt-1">
-                                        <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/70 uppercase ml-1">Travel Mode</label>
+                                        <label className="text-[9px] font-bold tracking-[0.2em] text-[var(--color-primary)]/90 uppercase ml-1">Travel Mode</label>
                                         <div className="grid grid-cols-3 bg-white/5 rounded-none p-1 gap-1 border border-white/10">
                                             <button
                                                 onClick={() => setTransportMode('driving-car')}
@@ -1367,7 +1390,7 @@ export default function Home() {
                                         onClick={() => setIsHoursOpen(!isHoursOpen)}
                                         className="flex justify-between items-center w-full px-1 group"
                                     >
-                                        <label className="text-[10px] font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase cursor-pointer group-hover:text-[var(--color-primary)] transition-colors">
+                                        <label className="text-[10px] font-bold tracking-widest text-[var(--color-primary)]/90 uppercase cursor-pointer group-hover:text-[var(--color-primary)] transition-colors">
                                             Daily Active Hours
                                             {!isHoursOpen && <span className="ml-2 text-[9px] lowercase italic font-normal text-white/20">(Expand to refine)</span>}
                                         </label>
@@ -1389,10 +1412,40 @@ export default function Home() {
 
                                                 return (
                                                     <div key={dateStr} className="flex items-center gap-3 bg-white/5 p-2 rounded-none border border-white/5 hover:border-white/10 transition-colors">
-                                                        <span className="text-[10px] font-bold text-white/40 ml-2 w-16 uppercase tracking-wider">{d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}</span>
-                                                        <input className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-center py-1 text-white font-mono outline-none" type="time" value={formatTime(hoursParams.start.hours, hoursParams.start.minutes)} onChange={(e) => handleActiveHoursChange(dateStr, 'start', e.target.value)} />
+                                                        <span className="text-[10px] font-bold text-white/40 ml-2 w-16 uppercase tracking-wider tabular-nums">{d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}</span>
+                                                        <div className="relative flex-1 group/time flex items-center">
+                                                            <div className="relative flex-1">
+                                                                <input
+                                                                    className="w-full bg-transparent border-none focus:ring-0 text-sm text-center py-1 text-white font-mono outline-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-10"
+                                                                    type="time"
+                                                                    value={formatTime(hoursParams.start.hours, hoursParams.start.minutes)}
+                                                                    onClick={(e) => e.currentTarget.showPicker()}
+                                                                    onChange={(e) => handleActiveHoursChange(dateStr, 'start', e.target.value)}
+                                                                />
+                                                                <Clock size={10} className="absolute right-0 top-1/2 -translate-y-1/2 text-[var(--color-primary)]/40 group-hover/time:text-[var(--color-primary)] transition-colors pointer-events-none" />
+                                                            </div>
+                                                            <div className="flex flex-col ml-1 opacity-0 group-hover/time:opacity-100 transition-opacity">
+                                                                <button onClick={(e) => { e.stopPropagation(); shiftActiveHours(dateStr, 'start', 60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="+1 Hour"><ChevronUp size={10} /></button>
+                                                                <button onClick={(e) => { e.stopPropagation(); shiftActiveHours(dateStr, 'start', -60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="-1 Hour"><ChevronDown size={10} /></button>
+                                                            </div>
+                                                        </div>
                                                         <div className="w-2 h-px bg-white/10"></div>
-                                                        <input className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-center py-1 text-white font-mono outline-none" type="time" value={formatTime(hoursParams.end.hours, hoursParams.end.minutes)} onChange={(e) => handleActiveHoursChange(dateStr, 'end', e.target.value)} />
+                                                        <div className="relative flex-1 group/time flex items-center">
+                                                            <div className="relative flex-1">
+                                                                <input
+                                                                    className="w-full bg-transparent border-none focus:ring-0 text-sm text-center py-1 text-white font-mono outline-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-10"
+                                                                    type="time"
+                                                                    value={formatTime(hoursParams.end.hours, hoursParams.end.minutes)}
+                                                                    onClick={(e) => e.currentTarget.showPicker()}
+                                                                    onChange={(e) => handleActiveHoursChange(dateStr, 'end', e.target.value)}
+                                                                />
+                                                                <Clock size={10} className="absolute right-0 top-1/2 -translate-y-1/2 text-[var(--color-primary)]/40 group-hover/time:text-[var(--color-primary)] transition-colors pointer-events-none" />
+                                                            </div>
+                                                            <div className="flex flex-col ml-1 opacity-0 group-hover/time:opacity-100 transition-opacity">
+                                                                <button onClick={(e) => { e.stopPropagation(); shiftActiveHours(dateStr, 'end', 60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="+1 Hour"><ChevronUp size={10} /></button>
+                                                                <button onClick={(e) => { e.stopPropagation(); shiftActiveHours(dateStr, 'end', -60); }} className="text-[var(--color-primary)]/40 hover:text-[var(--color-primary)] p-0.5" title="-1 Hour"><ChevronDown size={10} /></button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -1402,7 +1455,7 @@ export default function Home() {
 
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-end border-b border-[var(--color-outline-variant)]/10 pb-2">
-                                        <label className="text-[10px] font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase ml-1">Places to Visit</label>
+                                        <label className="text-[10px] font-bold tracking-widest text-[var(--color-primary)]/90 uppercase ml-1">Places to Visit</label>
                                         <button onClick={handleAddPlace} className="text-[var(--color-primary)] hover:text-[var(--color-secondary)] text-xs font-bold transition-colors flex items-center gap-1">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
                                             Add Place
@@ -1508,7 +1561,7 @@ export default function Home() {
 
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                                        <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase ml-1 flex items-center gap-2">
+                                        <label className="text-[10px] font-bold tracking-widest text-[var(--color-primary)]/90 uppercase ml-1 flex items-center gap-2">
                                             <Sparkles size={12} className="text-[var(--color-planner-green)]" />
                                             Discover Local Gems
                                         </label>
@@ -1613,11 +1666,11 @@ export default function Home() {
                                 >
                                     {/* Scanline hover effect */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                                    
+
                                     <span className="text-sm uppercase tracking-[0.25em]">
                                         {isPlanning ? (
                                             <span className="flex items-center gap-3">
-                                                <Loader2 className="animate-spin" size={16} /> 
+                                                <Loader2 className="animate-spin" size={16} />
                                                 RUNNING_OPTIMIZER...
                                             </span>
                                         ) : 'Generate Optimized Itinerary'}
