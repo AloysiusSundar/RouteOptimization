@@ -84,6 +84,10 @@ interface SavedTrip {
     tripLength: number;
     places: UIPlace[];
     transportMode: string;
+    activeHours: Record<string, ActiveHours>;
+    schedule?: ScheduleStop[] | null;
+    routeGeoJson?: Record<string, any>;
+    mapCoords?: [number, number][];
 }
 
 export default function Home() {
@@ -562,7 +566,11 @@ export default function Home() {
             startDate: startDate.toString(),
             tripLength,
             places,
-            transportMode
+            transportMode,
+            activeHours,
+            schedule,
+            routeGeoJson,
+            mapCoords
         };
 
         setSavedTrips(prev => [newTrip, ...prev]);
@@ -577,14 +585,16 @@ export default function Home() {
         setAccommodationCoords(trip.accommodationCoords || null);
         setStartDate(trip.startDate);
         setTripLength(trip.tripLength);
-        setPlaces(trip.places);
+        setPlaces(trip.places || []);
         setTransportMode(trip.transportMode);
-        setIsMyTripsOpen(false);
+        
+        // V8.6: Full Context Restoration
+        setActiveHours(trip.activeHours || {});
+        setSchedule(trip.schedule || null);
+        setRouteGeoJson(trip.routeGeoJson || {});
+        setMapCoords(trip.mapCoords || []);
 
-        // Reset operational state to trigger re-plan
-        setSchedule(null);
-        setRouteGeoJson({});
-        setMapCoords([]);
+        setIsMyTripsOpen(false);
     };
 
     const handleDeleteTrip = (id: string) => {
