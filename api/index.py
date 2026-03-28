@@ -71,13 +71,15 @@ async def plan_trip(input_data: PlanInput):
         if input_data.baseCity:
             base_city_coords = get_coordinates(input_data.baseCity)
         
-        anchor_coords = input_data.accommodationCoords or base_city_coords
+        anchor_coords = input_data.accommodationCoords
+        focus_coords = anchor_coords or base_city_coords
 
         valid_places = [p.dict() for p in input_data.places if p.name.strip()]
         
         # Step 2: Ensure all places have coordinates (Geocode if missing)
         # Using a "Chain of Proximity": Each place is geocoded relative to the PREVIOUS pin's location.
-        focus_coords = anchor_coords
+        # Using a "Chain of Proximity"
+        # focus_coords initialized above
         for p in valid_places:
             if not p.get("coords") and p.get("name"):
                 try:
@@ -96,7 +98,7 @@ async def plan_trip(input_data: PlanInput):
             valid_places,
             input_data.startDate,
             input_data.tripLength,
-            anchor_coords
+            anchor_coords or base_city_coords # Still use base_city for clustering stability
         )
 
         final_ordered_places = []
@@ -257,9 +259,9 @@ async def enrich(name: str, lat: float, lon: float):
     return fetch_wiki_data(name, lat, lon)
 
 @app.get("/api/autocomplete")
-async def autocomplete(text: str, lat: Optional[float] = None, lon: Optional[float] = None):
+async def autocomplete(text: str, lat: Optional[float] = None, lon: Optional[float] = None, radius: Optional[int] = None):
     focus = (lat, lon) if lat is not None and lon is not None else None
-    return get_autocomplete_suggestions(text, focus)
+    return get_autocomplete_suggestions(text, focus, boundary_radius_km=radius)
 
 @app.get("/api/geocode")
 async def geocode(text: str):

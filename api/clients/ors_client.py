@@ -57,6 +57,7 @@ def get_autocomplete_suggestions(text: str, focus: Optional[Tuple[float, float]]
     if focus:
         params["focus.point.lat"] = focus[0]
         params["focus.point.lon"] = focus[1]
+        
         if boundary_radius_km:
             params["boundary.circle.lat"] = focus[0]
             params["boundary.circle.lon"] = focus[1]

@@ -218,7 +218,8 @@ export default function Home() {
             setSearchLoading(true);
             // Bias towards existing stops OR the current Base City
             const bias = places.find((p: UIPlace) => p.coords)?.coords || baseCityCoords || undefined;
-            const results = await getAutocompleteWithPython(queryInput, bias?.[0], bias?.[1]);
+            const radius = (activeSearch.type === 'stay' || activeSearch.type === 'place') ? 150 : undefined;
+            const results = await getAutocompleteWithPython(queryInput, bias?.[0], bias?.[1], radius);
             setSuggestions(results);
             setSearchLoading(false);
         }, 400);

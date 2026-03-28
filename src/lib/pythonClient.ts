@@ -47,10 +47,14 @@ export async function enrichWithPython(name: string, lat: number, lon: number): 
   return response.json();
 }
 
-export async function getAutocompleteWithPython(text: string, lat?: number, lon?: number): Promise<any[]> {
-  const url = lat !== undefined && lon !== undefined
-    ? `/api/autocomplete?text=${encodeURIComponent(text)}&lat=${lat}&lon=${lon}`
-    : `/api/autocomplete?text=${encodeURIComponent(text)}`;
+export async function getAutocompleteWithPython(text: string, lat?: number, lon?: number, radius?: number): Promise<any[]> {
+  let url = `/api/autocomplete?text=${encodeURIComponent(text)}`;
+  if (lat !== undefined && lon !== undefined) {
+    url += `&lat=${lat}&lon=${lon}`;
+    if (radius !== undefined) {
+      url += `&radius=${radius}`;
+    }
+  }
   const response = await fetch(url);
   if (!response.ok) return [];
   return response.json();
