@@ -1,4 +1,5 @@
 export interface Place {
+  id: string;
   name: string;
   reservation_time?: Date | null;
   visit_duration: number; // in minutes
@@ -6,6 +7,7 @@ export interface Place {
 }
 
 export interface ScheduleStop {
+  id: string;
   place: string;
   latlon: [number, number];
   arrival: Date;
@@ -130,6 +132,7 @@ export function generateSchedule(
     currentTime = new Date(visitEnd);
 
     schedule.push({
+      id: place.id || `stop-${i}-${Date.now()}`,
       place: place.name,
       latlon: coord,
       arrival: new Date(arrivalTime),

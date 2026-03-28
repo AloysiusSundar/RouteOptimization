@@ -31,4 +31,31 @@ desktop.ini
 *.sqlite
 *.sqlite3
 
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+*.tsbuildinfo
+next-env.d.ts
+
+# production
+/build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# vercel
+.vercel
+
+# Resume Folder
 ResumeAddThisFolderToGitIgnore/

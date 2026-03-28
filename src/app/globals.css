@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-on-secondary: #003911;
+  --color-on-secondary: #ffffff;
   --color-inverse-primary: #005bc1;
   --color-surface-container-lowest: #0e0e0e;
   --color-outline: #8b90a0;
   --color-on-background: #e5e2e1;
   --color-background: #131313;
   --color-primary-fixed-dim: #adc6ff;
-  --color-on-secondary-fixed: #002107;
+  --color-on-secondary-fixed: #001d36;
   --color-tertiary: #ffb595;
-  --color-on-secondary-fixed-variant: #00531c;
+  --color-on-secondary-fixed-variant: #44474e;
   --color-on-error: #690005;
-  --color-secondary-container: #05b046;
+  --color-secondary-container: #3b475f;
   --color-on-primary: #002e69;
   --color-surface-container-highest: #353534;
   --color-tertiary-container: #ef6719;
   --color-on-primary-fixed: #001a41;
-  --color-primary-container: #4b8eff;
+  --color-primary-container: #ebffe2;
   --color-on-tertiary-container: #4c1a00;
   --color-error: #ffb4ab;
   --color-secondary-fixed: #72fe88;
@@ -27,7 +27,7 @@
   --color-on-tertiary: #571e00;
   --color-on-surface: #e5e2e1;
   --color-surface-container-low: #1c1b1b;
-  --color-on-secondary-container: #003a11;
+  --color-on-secondary-container: #d7e2ff;
   --color-error-container: #93000a;
   --color-on-primary-fixed-variant: #004493;
   --color-surface-container-high: #2a2a2a;
@@ -39,15 +39,38 @@
   --color-on-error-container: #ffdad6;
   --color-tertiary-fixed-dim: #ffb595;
   --color-surface-variant: #353534;
-  --color-secondary: #53e16f;
-  --color-primary: #adc6ff;
-  --color-secondary-fixed-dim: #53e16f;
+  --color-secondary: #ebffe2;
+  --color-primary: #ebffe2;
+  --color-secondary-fixed-dim: #ebffe2;
   --color-on-primary-container: #00285c;
   --color-primary-fixed: #d8e2ff;
   --color-surface-tint: #adc6ff;
   --color-surface-container: #201f1f;
   --color-inverse-surface: #e5e2e1;
   --color-on-tertiary-fixed-variant: #7c2e00;
+  
+  /* Zen-Hackery Landing Page Tokens */
+  --color-zen-bg: #050505;
+  --color-zen-neon: #00ff41;
+  --color-zen-light: #ebffe2;
+  --color-zen-dark: #3b4b37;
+  --color-zen-surface: #131313;
+  --color-zen-surface-low: #0e0e0e;
+  --color-planner-green: #53e16f;
+  --color-legacy-blue: #4b8eff;
+  
+  /* Map-Specific Aesthetics (Decoupled from UI) */
+  --color-map-route: #4b8eff;
+  --color-map-route-glow: rgba(75, 142, 255, 0.4);
+  --color-map-pin: #4b8eff;
+  --color-map-pin-secondary: #bbc6e4;
+  --color-map-stay: #10b981;
+  --color-map-route-satellite: #1d4ed8;
+  --color-map-pin-satellite: #1d4ed8;
+  --color-map-tooltip-bg: var(--color-surface-container-high);
+  --color-map-tooltip-border: var(--color-outline-variant);
+  --color-map-tooltip-bg-satellite: rgba(0,0,0,0.9);
+  --color-map-tooltip-border-satellite: rgba(255,255,255,0.2);
 
   --font-headline: var(--font-space-mono), monospace;
   --font-body: var(--font-geist-sans), sans-serif;
@@ -71,6 +94,11 @@
   .scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .scrollbar-bounded::-webkit-scrollbar-track {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
   }
 }
 
@@ -109,8 +137,31 @@ body {
   background-color: var(--color-background);
   color: var(--color-on-surface);
   font-family: var(--font-body);
+  color-scheme: dark;
 }
 
-::-webkit-scrollbar { width: 6px; }
+
+  ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-outline-variant); border-radius: 10px; }
+
+.theme-zen {
+  --font-body: var(--font-inter), sans-serif;
+  --font-headline: var(--font-inter), sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+  --font-label: var(--font-jetbrains-mono), monospace;
+}
+
+.theme-zen .ghost-border {
+  border: 1px solid rgba(59, 75, 55, 0.15);
+}
+
+.theme-zen .terminal-cursor::after {
+  content: '_';
+  animation: zen-blink 1s step-end infinite;
+}
+
+@keyframes zen-blink {
+  from, to { opacity: 1; }
+  50% { opacity: 0; }
+}
