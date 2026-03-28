@@ -65,9 +65,33 @@ export default function LandingPage() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 1, ease: "easeOut" }}
                             >
-                                <h1 className="font-headline text-8xl md:text-[160px] font-extrabold tracking-tighter leading-none mb-4 text-zen-light">
-                                    YATHIR.AI
-                                </h1>
+                                <div className="relative inline-block group">
+                                    {/* Base Layer: White text */}
+                                    <h1 className="font-headline text-8xl md:text-[160px] font-extrabold tracking-tighter leading-none mb-4 text-zen-light select-none whitespace-nowrap">
+                                        YATHIR.AI
+                                    </h1>
+
+                                    {/* Mask Layer: Black on Green Reveal */}
+                                    <motion.div 
+                                        className="absolute top-0 left-0 h-full bg-zen-neon overflow-hidden pointer-events-none"
+                                        initial={{ width: "0%" }}
+                                        animate={{ 
+                                            width: ["0%", "100%", "0%"]
+                                        }}
+                                        transition={{ 
+                                            duration: 2.2, 
+                                            ease: "easeInOut"
+                                        }}
+                                        style={{ height: 'calc(100% - 1.2rem)' }} // Account for margin-bottom of h1
+                                    >
+                                        <h1 className="font-headline text-8xl md:text-[160px] font-extrabold tracking-tighter leading-none text-[#003907] select-none whitespace-nowrap">
+                                            YATHIR.AI
+                                        </h1>
+                                        {/* The Terminal Cursor Cursor */}
+                                        <div className="absolute top-0 right-0 w-[4px] md:w-[8px] h-full bg-zen-neon shadow-[0_0_20px_#00FF41]"></div>
+                                    </motion.div>
+                                </div>
+
                                 <p className="font-mono text-zen-dark text-sm md:text-base tracking-[0.2em] mb-16 uppercase max-w-3xl mx-auto">
                                     Next-generation route optimization for the modern traveler
                                 </p>
@@ -95,18 +119,20 @@ export default function LandingPage() {
                             </motion.div>
                         </div>
 
-                        {/* Technical Stack Pills */}
+                        {/* Technical Stack Pills - App Core Only */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 1, duration: 1 }}
                             className="absolute bottom-12 flex gap-6 overflow-hidden max-w-full px-6"
                         >
-                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Next.js 15</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Next.js 16 // React 19</span>
                             <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Tailwind 4</span>
-                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Framer Motion</span>
-                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Rust Backend</span>
-                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Turf.js</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Framer Motion 12</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Gemini 3.1 Flash-Lite</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Held-Karp API</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Leaflet.js</span>
+                            <span className="font-mono text-[9px] text-zen-dark uppercase border border-zen-dark/20 px-3 py-1">Geospatial Intelligence</span>
                         </motion.div>
                     </section>
 
